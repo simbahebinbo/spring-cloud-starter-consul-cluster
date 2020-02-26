@@ -884,7 +884,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   /**
    * 尽最大努力向每个节点报告自身的健康状况
    *
-   * @see {@link #TtlScheduler}
+   * see TtlScheduler
    */
   @Override
   public Response<Void> agentCheckPass(String checkId) {
@@ -902,7 +902,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   /**
    * 尽最大努力向每个节点报告自身的健康状况
    *
-   * @see {@link #TtlScheduler}
+   * see TtlScheduler
    */
   @Override
   public Response<Void> agentCheckPass(String checkId, String note) {
@@ -920,7 +920,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   /**
    * 尽最大努力向每个节点报告自身的健康状况
    *
-   * @see {@link #TtlScheduler}
+   * see TtlScheduler
    */
   @Override
   public Response<Void> agentCheckPass(String checkId, String note, String token) {
@@ -978,7 +978,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   /**
    * 检测所有节点是否可用，如果都可用，则向所有节点注册服务
    *
-   * @see {@link #ConsulServiceRegistry.register(...)}
+   * see ConsulServiceRegistry.register(...)
    */
   @Override
   public Response<Void> agentServiceRegister(NewService newService) {
@@ -994,7 +994,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   /**
    * 检测所有节点是否可用，如果都可用，则向所有节点注册服务
    *
-   * @see {@link #ConsulServiceRegistry.register(...)}
+   * see ConsulServiceRegistry.register(...)
    */
   @Override
   public Response<Void> agentServiceRegister(NewService newService, String token) {
@@ -1010,7 +1010,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   /**
    * 检测所有节点是否可用，如果都可用，则向所有节点注销服务
    *
-   * @see {@link #ConsulServiceRegistry.deregister(...)}
+   * see ConsulServiceRegistry.deregister(...)
    */
   @Override
   public Response<Void> agentServiceDeregister(String serviceId) {
@@ -1026,7 +1026,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   /**
    * 检测所有节点是否可用，如果都可用，则向所有节点注销服务
    *
-   * @see {@link #ConsulServiceRegistry.deregister(...)}
+   * see ConsulServiceRegistry.deregister(...)
    */
   @Override
   public Response<Void> agentServiceDeregister(String serviceId, String token) {
@@ -1042,7 +1042,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   /**
    * 检测所有节点是否可用，如果都可用，则向所有节点执行setMaintenance
    *
-   * @see {@link #ConsulServiceRegistry.setStatus(...)}
+   * see ConsulServiceRegistry.setStatus(...)
    */
   @Override
   public Response<Void> agentServiceSetMaintenance(String serviceId,
@@ -1060,7 +1060,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   /**
    * 检测所有节点是否可用，如果都可用，则向所有节点执行setMaintenance
    *
-   * @see {@link #ConsulServiceRegistry.setStatus(...)}
+   * see ConsulServiceRegistry.setStatus(...)
    */
   @Override
   public Response<Void> agentServiceSetMaintenance(String serviceId,
