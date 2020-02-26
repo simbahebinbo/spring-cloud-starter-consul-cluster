@@ -41,11 +41,11 @@
 
   <distributionManagement>
     <snapshotRepository>
-      <id>ossrh</id>
-      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+      <id>oss</id>
+      <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
     </snapshotRepository>
     <repository>
-      <id>ossrh</id>
+      <id>oss</id>
       <name>Maven Central Staging Repository</name>
       <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
     </repository>
@@ -536,7 +536,6 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-javadoc-plugin</artifactId>
         <configuration>
-          <aggregate>true</aggregate>
           <charset>${project.build.sourceEncoding}</charset>
           <encoding>${project.build.sourceEncoding}</encoding>
           <docencoding>${project.build.sourceEncoding}</docencoding>
@@ -550,9 +549,6 @@
               <goal>jar</goal>
             </goals>
             <phase>package</phase>
-            <configuration>
-              <additionalparam>-Xdoclint:none</additionalparam>
-            </configuration>
           </execution>
         </executions>
       </plugin>

@@ -83,7 +83,7 @@ import org.springframework.util.StringUtils;
  *
  * 2、服务注册模块：
  *
- * 3.1、{@link #ConsulServiceRegistry}中所用到的几个方法(agentServiceRegister,agentServiceDeregister,agentServiceSetMaintenance)，
+ * 3.1、ConsulServiceRegistry 中所用到的几个方法(agentServiceRegister,agentServiceDeregister,agentServiceSetMaintenance)，
  *
  * 在调用前均要求各集群节点必须可用(健康的)，并且在每个节点上执行一次！
  *
@@ -99,7 +99,7 @@ import org.springframework.util.StringUtils;
  *
  * 如果该节点挂了，那么该节点上注册的服务的healthcheck将无法执行，因此会出现服务实际是健康的，但是consul集群认为其是不健康的(因为负责健康检测的那个节点挂了)
  *
- * 2.2 {@link #TtlScheduler}中所用到的方法(agentCheckPass)，则尽最大努力在每个节点上执行一次!
+ * 2.2 TtlScheduler 中所用到的方法(agentCheckPass)，则尽最大努力在每个节点上执行一次!
  *
  * 3、服务发现模块：
  *

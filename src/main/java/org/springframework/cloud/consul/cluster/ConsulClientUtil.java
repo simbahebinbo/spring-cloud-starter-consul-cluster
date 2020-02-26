@@ -52,7 +52,7 @@ public class ConsulClientUtil {
   }
 
   /**
-   * 创建ConsulClient, copy from {@link #ConsulAutoConfiguration}
+   * 创建 ConsulClient, copy from ConsulAutoConfiguration
    */
   public static ConsulClient createConsulClient(ConsulProperties consulProperties) {
     final int agentPort = consulProperties.getPort();
