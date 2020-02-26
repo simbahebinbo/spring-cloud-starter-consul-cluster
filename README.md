@@ -53,8 +53,6 @@
 
 1.项目中引入starter：[spring-cloud-starter-consul-cluster](https://github.com/penggle/spring-cloud-starter-consul-cluster)
 
-**以下依赖已发布到maven中央库中了**
-
 ````xml
 
 	<dependency>

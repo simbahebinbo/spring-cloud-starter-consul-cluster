@@ -1,0 +1,6 @@
+#没有配置
+spring.cloud.consul.cluster.nodes: ""
+
+logging:
+  level:
+    org.springframework.cloud: DEBUG

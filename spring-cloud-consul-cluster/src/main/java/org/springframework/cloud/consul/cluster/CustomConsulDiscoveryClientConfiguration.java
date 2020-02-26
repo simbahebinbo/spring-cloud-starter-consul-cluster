@@ -16,9 +16,6 @@ import com.ecwid.consul.v1.ConsulClient;
 
 /**
  * 自定义的Consul服务发现配置
- *
- * @author pengpeng
- * @date 2019年8月21日 上午9:40:55
  */
 @Configuration
 @ConditionalOnConsulEnabled
@@ -28,14 +25,14 @@ import com.ecwid.consul.v1.ConsulClient;
 @RibbonClients(defaultConfiguration = CustomConsulRibbonClientConfiguration.class)
 public class CustomConsulDiscoveryClientConfiguration {
 
-	/**
-	 * 自定义的ConsulDiscoveryClient
-	 */
-	@Bean
-	@ConditionalOnMissingBean
-	public ConsulDiscoveryClient consulDiscoveryClient(ConsulClient consulClient,
-			ConsulDiscoveryProperties discoveryProperties) {
-		return new CustomConsulDiscoveryClient(consulClient, discoveryProperties);
-	}
+  /**
+   * 自定义的ConsulDiscoveryClient
+   */
+  @Bean
+  @ConditionalOnMissingBean
+  public ConsulDiscoveryClient consulDiscoveryClient(ConsulClient consulClient,
+      ConsulDiscoveryProperties discoveryProperties) {
+    return new CustomConsulDiscoveryClient(consulClient, discoveryProperties);
+  }
 
 }

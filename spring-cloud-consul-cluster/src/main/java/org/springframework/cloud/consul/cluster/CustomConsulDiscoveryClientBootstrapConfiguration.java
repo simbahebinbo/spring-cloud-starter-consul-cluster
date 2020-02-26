@@ -11,9 +11,9 @@ import org.springframework.context.annotation.Configuration;
 
 @Configuration
 @ConditionalOnProperty(value = "spring.cloud.config.discovery.enabled", matchIfMissing = false)
-@ImportAutoConfiguration({ ConsulAutoConfiguration.class,
-		ConsulDiscoveryClientConfiguration.class,
-		CustomConsulDiscoveryClientConfiguration.class })
+@ImportAutoConfiguration({ConsulAutoConfiguration.class,
+    ConsulDiscoveryClientConfiguration.class,
+    CustomConsulDiscoveryClientConfiguration.class})
 @AutoConfigureBefore(ConsulDiscoveryClientConfigServiceBootstrapConfiguration.class)
 @AutoConfigureAfter(ClusterConsulBootstrapConfiguration.class)
 public class CustomConsulDiscoveryClientBootstrapConfiguration {
