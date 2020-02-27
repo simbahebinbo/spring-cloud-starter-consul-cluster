@@ -49,11 +49,41 @@
       <optional>true</optional>
     </dependency>
 
+<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-commons</artifactId>
+			<optional>true</optional>
+		</dependency>
+
     <dependency>
       <groupId>org.springframework</groupId>
       <artifactId>spring-core</artifactId>
       <optional>true</optional>
     </dependency>
+
+<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-consul-config</artifactId>
+			<optional>true</optional>
+		</dependency>
+
+<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-consul-discovery</artifactId>
+			<optional>true</optional>
+		</dependency>
+
+<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-netflix-ribbon</artifactId>
+			<optional>true</optional>
+		</dependency>
+
+<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-core</artifactId>
+			<optional>true</optional>
+		</dependency>
 
     <dependency>
       <groupId>org.springframework</groupId>

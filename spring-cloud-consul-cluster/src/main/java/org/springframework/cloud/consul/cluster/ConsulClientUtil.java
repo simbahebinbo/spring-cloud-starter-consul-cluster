@@ -10,10 +10,10 @@ import com.google.common.hash.Hashing;
 
 import com.ecwid.consul.transport.TLSConfig;
 import com.ecwid.consul.v1.ConsulClient;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.cloud.consul.ConsulProperties;
 import org.springframework.util.Assert;
-import org.springframework.util.CollectionUtils;
 
 /**
  * ConsulClient工具类

@@ -1,6 +1,0 @@
-#错误的配置
-spring.cloud.consul.cluster.nodes: null
-
-logging:
-  level:
-    org.springframework.cloud: DEBUG

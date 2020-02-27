@@ -1,6 +1,0 @@
-#空的配置
-
-
-logging:
-  level:
-    org.springframework.cloud: DEBUG

@@ -1,8 +1,8 @@
-# spring-cloud-starter-consul-cluster
-该模块为解决spring-cloud-consul(Registry-服务注册、Discovery-服务发现)中ConsulClient单点故障问题而开发的高可用集群版ConsulClient.
+# spring-cloud-consul-cluster
+该模块为解决spring-cloud-consul(Config-服务配置、Registry-服务注册、Discovery-服务发现)中ConsulClient单点故障问题而开发的高可用集群版ConsulClient.
 
 # 前言
-使用consul作为服务注册、服务发现中间件的应用程序都不可避免的遇到consul客户端单点故障问题，
+使用consul作为服务配置、服务注册、服务发现中间件的应用程序都不可避免的遇到consul客户端单点故障问题，
 此模块即是为解决该问题而生！
 该模块相比于引入Nginx/HAProxy等负载均衡中间件的方式更为可靠和灵活，
 因为引入它们，它们自身也会出现单点故障问题，
@@ -41,6 +41,8 @@ consul的使用守则是应用程序与consul client共生死(部署在一起,�
 
 ### 综上所述集群版本consul客户端ClusterConsulClient应该实现如下基本功能：
 
+* spring.cloud.consul.cluster.nodes 如果配置为单个节点，那么与原来一样：autoconfigure出来的consul客户端就是ConsulClient类型，而不是ClusterConsulClient
+
 * ClusterConsulClient内部实际是代理了spring.cloud.consul.cluster.nodes 配置的多个节点的ConsulClient的行为(方法)，
 只不过在发生单点故障时做动态切换并且进行fallback重试。
 
@@ -73,6 +75,8 @@ consul的使用守则是应用程序与consul client共生死(部署在一起,�
 如果全部恢复了即集群中的所有ConsulClient都是可用的，
 则currentClient立即恢复为primaryClient。
 
+* 服务配置模块：服务配置使用的是一系列ConsulClient KV操作的方法。这些方法仅在当前节点上执行一次，如果当前节点不可用则使用RetryTemplate进行fallback重试!
+
 * 服务注册模块：服务注册ConsulServiceRegistry中所用到的几个方法是ConsulClient.agentServiceRegister，ConsulClient.agentServiceDeregister，ConsulClient.agentServiceSetMaintenance。
 注册服务必须在每个集群节点上都注册(register)一遍(多点广播注册)，
 因此注册前都会检测各个集群节点是否都是可用的，否则认为注册失败！
@@ -102,6 +106,8 @@ consul的使用守则是应用程序与consul client共生死(部署在一起,�
 # 使用方法
 
 1.项目中引入starter：[spring-cloud-starter-consul-cluster](https://github.com/lansheng228/spring-cloud-starter-consul-cluster)
+
+**以下依赖已发布到maven中央库中了**
 
 ````xml
 

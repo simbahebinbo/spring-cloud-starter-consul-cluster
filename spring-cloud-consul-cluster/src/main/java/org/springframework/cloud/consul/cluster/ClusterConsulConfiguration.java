@@ -11,23 +11,32 @@ import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.cloud.commons.util.UtilAutoConfiguration;
 import org.springframework.cloud.consul.ConditionalOnConsulEnabled;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 
 @Slf4j
 @Configuration
 @ConditionalOnConsulEnabled
-@ConfigurationProperties(value = "spring.cloud.consul.cluster")
+@EnableConfigurationProperties
+@ConfigurationProperties(prefix = "spring.cloud.consul.cluster")
+@AutoConfigureBefore(ClusterConsulBootstrapConfiguration.class)
+@Import(UtilAutoConfiguration.class)
 public class ClusterConsulConfiguration {
 
   @Setter
+  @Getter
   private String nodes;
 
   /**
    * 初始化时要求所有节点的类型
    */
   @Setter
+  @Getter
   private String mode;
 
   @Getter

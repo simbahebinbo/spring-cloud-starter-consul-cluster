@@ -3,6 +3,7 @@ package org.springframework.cloud.consul.cluster;
 import com.ecwid.consul.v1.ConsulClient;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.AutoConfigureBefore;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.cloud.commons.util.InetUtils;
@@ -10,6 +11,7 @@ import org.springframework.cloud.commons.util.InetUtils.HostInfo;
 import org.springframework.cloud.commons.util.UtilAutoConfiguration;
 import org.springframework.cloud.consul.ConditionalOnConsulEnabled;
 import org.springframework.cloud.consul.ConsulProperties;
+import org.springframework.cloud.consul.config.ConsulConfigBootstrapConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
@@ -25,6 +27,7 @@ import org.springframework.context.annotation.Import;
 @ConditionalOnConsulEnabled
 @EnableConfigurationProperties
 @Import(UtilAutoConfiguration.class)
+@AutoConfigureBefore(ConsulConfigBootstrapConfiguration.class)
 public class ClusterConsulBootstrapConfiguration {
 
   @Autowired
@@ -39,6 +42,7 @@ public class ClusterConsulBootstrapConfiguration {
     ClusterConsulProperties consulProperties = new ClusterConsulProperties();
     HostInfo hostInfo = inetUtils.findFirstNonLoopbackHostInfo();
     consulProperties.setClusterClientKey(hostInfo.getIpAddress());
+    consulProperties.setHost(clusterConsulConfiguration.getNodes());
     consulProperties.setNodeMode(clusterConsulConfiguration.getNodeMode());
     return consulProperties;
   }

@@ -77,11 +77,14 @@ import org.springframework.util.StringUtils;
  *
  * 在客户端实现集群，省去使用Nginx/HAProxy等实现集群所带来的一系列问题(Nginx/HAProxy单点故障问题，服务注册与发现问题)
  *
- * 该集群版ConsulClient仅仅为基于spring-cloud-consul作为服务注册、服务发现的客户端所定制：
+ * 该集群版ConsulClient仅仅为基于spring-cloud-consul作为服务配置、服务注册、服务发现的客户端所定制：
  *
  * 1、默认组成客户端集群的节点必须是client模式的节点，并且在服务启动注册前都要求是可用的(健康的)
  *
- * 2、服务注册模块：
+ * 2、服务配置模块：关于ConsulClient KV操作仅在当前节点上执行一次，
+ * 如果当前节点不可用则使用RetryTemplate进行fallback重试!
+ * 
+ * 3、服务注册模块：
  *
  * 3.1、ConsulServiceRegistry 中所用到的几个方法(agentServiceRegister,agentServiceDeregister,agentServiceSetMaintenance)，
  *
@@ -99,15 +102,17 @@ import org.springframework.util.StringUtils;
  *
  * 如果该节点挂了，那么该节点上注册的服务的healthcheck将无法执行，因此会出现服务实际是健康的，但是consul集群认为其是不健康的(因为负责健康检测的那个节点挂了)
  *
- * 2.2 TtlScheduler 中所用到的方法(agentCheckPass)，则尽最大努力在每个节点上执行一次!
+ * 3.2 TtlScheduler 中所用到的方法(agentCheckPass)，则尽最大努力在每个节点上执行一次!
  *
- * 3、服务发现模块：
+ * 4、服务发现模块：
  *
- * 3.1、服务发现模块所用到的几个方法(getCatalogServices，getHealthServices)，仅在当前节点上执行一次，如果当前节点不可用则使用RetryTemplate进行fallback重试!
+ * 4.1、服务发现模块所用到的几个方法(getCatalogServices，getHealthServices)，
+ * 仅在当前节点上执行一次，如果当前节点不可用则使用RetryTemplate进行fallback重试!
  *
- * 3.2、由2.1可知，服务发现模块所用到的获取服务实例列表方法(getHealthServices)，它的调用结果存在重复，因此调用处(ConsulServiceRegistry.getInstances()、ConsulServerList.getXxxServers())需要加入排重逻辑!
+ * 4.2、由3.1可知，服务发现模块所用到的获取服务实例列表方法(getHealthServices)，
+ * 它的调用结果存在重复，因此调用处(ConsulServiceRegistry.getInstances()、ConsulServerList.getXxxServers())需要加入排重逻辑!
  *
- * 4、其他SpringCloud中未使用到的方法，使用默认策略，即仅在当前节点上执行一次，如果当前节点不可用则使用RetryTemplate进行fallback重试!
+ * 5、其他SpringCloud中未使用到的方法，使用默认策略，即仅在当前节点上执行一次，如果当前节点不可用则使用RetryTemplate进行fallback重试!
  */
 
 @Slf4j
@@ -1163,7 +1168,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     for (String connect : connects) {
       String[] parts = CharMatcher.anyOf(CommonConstant.SEPARATOR_COLON).trimFrom(connect.trim()).split(CommonConstant.SEPARATOR_COLON);
       Assert.isTrue(parts.length == 2, String
-          .format("Invalid config 'spring.cloud.consul.cluster.node' : %s", hosts));
+          .format("Invalid config 'spring.cloud.consul.cluster.nodes' : %s", hosts));
       String host = parts[0];
       int port = Integer.parseInt(parts[1]);
 
