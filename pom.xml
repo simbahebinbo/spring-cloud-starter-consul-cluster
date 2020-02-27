@@ -4,12 +4,17 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>com.github.lansheng228</groupId>
-  <artifactId>spring-cloud-starter-consul-cluster</artifactId>
-  <version>2.1.2.RELEASE</version>
-  <packaging>jar</packaging>
-  <name>spring-cloud-starter-consul-cluster</name>
-  <description>spring cloud consul cluster enhancements</description>
-  <url>https://github.com/lansheng228/spring-cloud-starter-consul-cluster</url>
+  <artifactId>spring-cloud-consul</artifactId>
+  <version>2.1.2.SNAPSHOT</version>
+  <packaging>pom</packaging>
+  <name>spring-cloud-consul</name>
+  <description>spring cloud consul enhancements</description>
+  <url>https://github.com/lansheng228/spring-cloud-consul</url>
+
+  <modules>
+    <module>spring-cloud-consul-cluster</module>
+    <module>spring-cloud-starter-consul-cluster</module>
+  </modules>
 
   <licenses>
     <license>
@@ -32,12 +37,12 @@
   </developers>
 
   <scm>
-    <connection>scm:git:https://github.com/lansheng228/spring-cloud-starter-consul-cluster.git
+    <connection>scm:git:https://github.com/lansheng228/spring-cloud-consul.git
     </connection>
     <developerConnection>
-      scm:git:https://github.com/lansheng228/spring-cloud-starter-consul-cluster.git
+      scm:git:https://github.com/lansheng228/spring-cloud-consul.git
     </developerConnection>
-    <url>https://github.com/lansheng228/spring-cloud-starter-consul-cluster</url>
+    <url>https://github.com/lansheng228/spring-cloud-consul</url>
     <tag>v${project.version}</tag>
   </scm>
 
@@ -111,54 +116,63 @@
         <groupId>com.alibaba</groupId>
         <artifactId>fastjson</artifactId>
         <version>${fastjson.version}</version>
+        <optional>true</optional>
       </dependency>
 
       <dependency>
         <groupId>commons-io</groupId>
         <artifactId>commons-io</artifactId>
         <version>${commons-io.version}</version>
+        <optional>true</optional>
       </dependency>
 
       <dependency>
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-lang3</artifactId>
         <version>${commons-lang3.version}</version>
+        <optional>true</optional>
       </dependency>
 
       <dependency>
         <groupId>commons-beanutils</groupId>
         <artifactId>commons-beanutils</artifactId>
         <version>${commons-beanutils.version}</version>
+        <optional>true</optional>
       </dependency>
 
       <dependency>
         <groupId>commons-codec</groupId>
         <artifactId>commons-codec</artifactId>
         <version>${commons-codec.version}</version>
+        <optional>true</optional>
       </dependency>
 
       <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-api</artifactId>
         <version>${slf4j.version}</version>
+        <optional>true</optional>
       </dependency>
 
       <dependency>
         <groupId>org.apache.commons</groupId>
         <artifactId>commons-compress</artifactId>
         <version>${commons-compress.version}</version>
+        <optional>true</optional>
       </dependency>
 
       <dependency>
         <groupId>javax.annotation</groupId>
         <artifactId>javax.annotation-api</artifactId>
         <version>${javax.annotation-api.version}</version>
+        <optional>true</optional>
       </dependency>
 
       <dependency>
         <groupId>javax.validation</groupId>
         <artifactId>validation-api</artifactId>
         <version>${javax.validation-api.version}</version>
+        <optional>true</optional>
       </dependency>
 
       <dependency>
@@ -172,6 +186,7 @@
         <groupId>org.projectlombok</groupId>
         <artifactId>lombok</artifactId>
         <version>${lombok.version}</version>
+        <optional>true</optional>
       </dependency>
 
       <dependency>
@@ -205,169 +220,6 @@
     </dependencies>
   </dependencyManagement>
 
-  <dependencies>
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-autoconfigure</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-configuration-processor</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-core</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.springframework</groupId>
-      <artifactId>spring-context</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-autoconfigure-processor</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-logging</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.springframework.boot</groupId>
-      <artifactId>spring-boot-starter-test</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.springframework.cloud</groupId>
-      <artifactId>spring-cloud-commons</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.springframework.cloud</groupId>
-      <artifactId>spring-cloud-context</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.springframework.cloud</groupId>
-      <artifactId>spring-cloud-consul-core</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.springframework.cloud</groupId>
-      <artifactId>spring-cloud-consul-discovery</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.springframework.cloud</groupId>
-      <artifactId>spring-cloud-netflix-ribbon</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.springframework.retry</groupId>
-      <artifactId>spring-retry</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>com.ecwid.consul</groupId>
-      <artifactId>consul-api</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>com.netflix.ribbon</groupId>
-      <artifactId>ribbon-core</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>com.netflix.ribbon</groupId>
-      <artifactId>ribbon-loadbalancer</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-lang3</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>com.alibaba</groupId>
-      <artifactId>fastjson</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>commons-io</groupId>
-      <artifactId>commons-io</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>commons-beanutils</groupId>
-      <artifactId>commons-beanutils</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>commons-codec</groupId>
-      <artifactId>commons-codec</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>com.google.guava</groupId>
-      <artifactId>guava</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.apache.commons</groupId>
-      <artifactId>commons-compress</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>javax.annotation</groupId>
-      <artifactId>javax.annotation-api</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>javax.validation</groupId>
-      <artifactId>validation-api</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.projectlombok</groupId>
-      <artifactId>lombok</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.mockito</groupId>
-      <artifactId>mockito-core</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.mockito</groupId>
-      <artifactId>mockito-junit-jupiter</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.awaitility</groupId>
-      <artifactId>awaitility</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>org.awaitility</groupId>
-      <artifactId>awaitility-proxy</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-  </dependencies>
 
   <profiles>
     <profile>

@@ -1129,8 +1129,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   /**
    * 创建所有ConsulClient
    *
-   * @return  返回所有节点
-   *
+   * @return 返回所有节点
    */
   protected List<ConsulClientHolder> createConsulClients() {
     List<String> connectList = prepareConnectList();
