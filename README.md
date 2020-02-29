@@ -1,4 +1,4 @@
-# spring-cloud-consul-cluster
+# spring-cloud-starter-consul-cluster
 该模块为解决spring-cloud-consul(Config-服务配置、Registry-服务注册、Discovery-服务发现)中ConsulClient单点故障问题而开发的高可用集群版ConsulClient.
 
 # 前言
@@ -101,23 +101,11 @@ consul的使用守则是应用程序与consul client共生死(部署在一起,�
 
 # 版本
 
-当前基于spring-cloud-consul 2.1.2.1.RELEASE版本
+当前基于spring-cloud-consul 2.2.1.RELEASE版本
 
 # 使用方法
 
 1.项目中引入starter：[spring-cloud-starter-consul-cluster](https://github.com/lansheng228/spring-cloud-starter-consul-cluster)
-
-**以下依赖已发布到maven中央库中了**
-
-````xml
-
-	<dependency>
-		<groupId>com.github.lansheng228</groupId>
-		<artifactId>spring-cloud-starter-consul-cluster</artifactId>
-		<version>2.1.2.1.RELEASE</version>
-	</dependency>
-
-````
 
 2.在bootstrap.yml|properties中指定 spring.cloud.consul.cluster.nodes 为多节点，如下所示：
 	

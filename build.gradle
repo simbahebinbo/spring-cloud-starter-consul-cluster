@@ -1,0 +1,98 @@
+buildscript {
+    ext {
+
+    }
+
+    repositories {
+        maven { url "http://maven.aliyun.com/nexus/content/groups/public/" }
+        jcenter()
+    }
+
+    dependencies {
+    }
+}
+
+
+apply plugin: 'java'
+apply plugin: 'eclipse'
+apply plugin: 'idea'
+
+
+repositories {
+    maven { url "http://maven.aliyun.com/nexus/content/groups/public/" }
+    jcenter()
+}
+
+group = 'com.github.lansheng228'
+version = '2.2.1.RELEASE'
+archivesBaseName = 'spring-cloud-starter-consul-cluster'
+description = 'spring cloud consul 扩展包'
+
+
+dependencies {
+    implementation("org.springframework.cloud:spring-cloud-starter-consul-discovery:$springCloudVersion")
+    implementation("org.springframework.cloud:spring-cloud-starter-consul-config:$springCloudVersion")
+
+    implementation("org.springframework.boot:spring-boot-autoconfigure:$springBootVersion")
+    implementation "org.springframework.boot:spring-boot-starter-logging:$springBootVersion"
+    implementation("org.springframework.retry:spring-retry:$springRetryVersion")
+
+    implementation("commons-io:commons-io:$commonsioVersion")
+    implementation("org.apache.commons:commons-lang3:$commonslang3Version")
+    implementation("commons-beanutils:commons-beanutils:$commonsbeanutilsVersion")
+    implementation("commons-codec:commons-codec:$commonscodecVersion")
+    implementation("org.apache.commons:commons-compress:$commonsCompressVersion")
+    implementation("com.google.guava:guava:$guavaVersion")
+    implementation("com.google.code.gson:gson:$gsonVersion")
+
+    implementation("javax.validation:validation-api:${validationApiVersion}")
+
+    compileOnly("org.projectlombok:lombok:$lombokVersion")
+    annotationProcessor("org.projectlombok:lombok:$lombokVersion")
+    testAnnotationProcessor "org.projectlombok:lombok:${lombokVersion}"
+    testCompileOnly "org.projectlombok:lombok:${lombokVersion}"
+
+    testImplementation("org.springframework.boot:spring-boot-starter-test:$springBootVersion")
+    testImplementation("org.mockito:mockito-core:$mockitoVersion")
+    testImplementation("org.mockito:mockito-junit-jupiter:$mockitoVersion")
+    testImplementation("org.junit.jupiter:junit-jupiter-api:$junitVersion")
+    testImplementation("org.junit.jupiter:junit-jupiter-params:$junitVersion")
+    testRuntime("org.junit.jupiter:junit-jupiter-engine:$junitVersion")
+
+    testImplementation("org.awaitility:awaitility:$awaitilityVersion")
+    testImplementation("org.awaitility:awaitility-proxy:$awaitilityProxyVersion")
+}
+
+wrapper {
+    gradleVersion = '6.2.1'
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = "UTF-8"
+    options.compilerArgs << "-Xlint:unchecked"
+    options.compilerArgs << "-Xlint:deprecation"
+}
+
+tasks.withType(Test) {
+    testLogging {
+        events 'started', 'passed'
+    }
+}
+
+compileJava {
+    options.compilerArgs << '-Xlint:deprecation' << '-Xlint:unchecked'
+}
+
+test {
+    testLogging.showStandardStreams = true
+    useJUnitPlatform()
+}
+
+apply from: "$rootDir/gradle/config/scripts/coverage.gradle"
+
+coverage.excludePackages = [
+]
+
+coverage.excludeClasses = [
+]
+
