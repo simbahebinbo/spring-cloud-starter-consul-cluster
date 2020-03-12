@@ -61,6 +61,7 @@ import com.ecwid.consul.v1.status.StatusClient;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.cloud.consul.ConsulProperties;
 import org.springframework.retry.RetryCallback;
 import org.springframework.retry.RetryContext;
@@ -1201,8 +1202,8 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
    * 根据已生成的集群列表(不管节点健康状况)初始化主要ConsulClient
    */
   protected ConsulClientHolder initPrimaryClient() {
-    return ConsulClientUtil.chooseClient(clusterConsulProperties.getClusterClientKey(),
-        consulClients);
+    return ConsulClientUtil.chooseClient(this.clusterConsulProperties.getClusterClientKey(),
+        this.consulClients);
   }
 
   /**
@@ -1210,27 +1211,33 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
    */
   protected void chooseConsulClient() {
     try {
-      chooseLock.lock();
-      if (!currentClient.isHealthy()) {
+      this.chooseLock.lock();
+      if (!this.currentClient.isHealthy()) {
         // 过滤出健康节点
-        List<ConsulClientHolder> availableClients = consulClients.stream()
+        List<ConsulClientHolder> availableClients = this.consulClients.stream()
             .filter(ConsulClientHolder::isHealthy).sorted()
             .collect(Collectors.toList());
         log.info("lansheng228: >>> Available ConsulClients: " + availableClients + " <<<");
+
+        if (ObjectUtils.isEmpty(availableClients)) {
+          checkConsulClientsHealth(); // 一个健康节点都没有，则立马执行一次全部健康检测
+          throw new IllegalStateException("lansheng228: >>> No consul client is available!!!");
+        }
+
         // 在健康节点中通过哈希一致性算法选取一个节点
         ConsulClientHolder choosedClient = ConsulClientUtil.chooseClient(
-            clusterConsulProperties.getClusterClientKey(), availableClients);
+            this.clusterConsulProperties.getClusterClientKey(), availableClients);
 
         if (choosedClient == null) {
-          checkConsulClientsHealth(); // 一个健康节点都没有，则立马执行一次全部健康检测
-          throw new IllegalStateException("No consul client is available!!!");
+          throw new IllegalStateException("lansheng228: >>> Choosed New ConsulClient Fail!!!");
         }
+
         log.info("lansheng228: >>> Successfully choosed a new ConsulClient : {} <<<",
             choosedClient);
         this.currentClient = choosedClient;
       }
     } finally {
-      chooseLock.unlock();
+      this.chooseLock.unlock();
     }
   }
 
@@ -1240,18 +1247,18 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
    * @param context - 重试上下文
    */
   protected ConsulClient getRetryConsulClient(RetryContext context) {
-    context.setAttribute(CURRENT_CLIENT_KEY, currentClient);
+    context.setAttribute(CURRENT_CLIENT_KEY, this.currentClient);
     int retryCount = context.getRetryCount();
-    if (!currentClient.isHealthy()) {
+    if (!this.currentClient.isHealthy()) {
       log.info("lansheng228: >>> Current ConsulClient[{}] Is Unhealthy. Choose Again! <<<",
-          currentClient.getClientId());
+          this.currentClient);
       chooseConsulClient();
     }
     if (retryCount > 0) {
       log.info("lansheng228: >>> Using current ConsulClient[{}] for retry {} <<<",
-          currentClient.getClientId(), retryCount);
+          this.currentClient, retryCount);
     }
-    return currentClient.getClient();
+    return this.currentClient.getClient();
   }
 
   @Override
@@ -1293,8 +1300,8 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
    */
   protected void checkConsulClientsHealth() {
     boolean allHealthy = isAllConsulClientsHealthy(true);
-    if (allHealthy && currentClient != primaryClient) { // 如果所有节点都是健康的，那么恢复currentClient为primaryClient
-//      currentClient = primaryClient;
+    if (allHealthy && (this.currentClient != this.primaryClient)) { // 如果所有节点都是健康的，那么恢复currentClient为primaryClient
+      this.currentClient = this.primaryClient;
       log.info("lansheng228: >>> The primaryClient is recovered when all consul clients is healthy. <<<");
     }
   }
