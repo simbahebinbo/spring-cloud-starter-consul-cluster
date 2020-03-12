@@ -47,7 +47,7 @@ public class ConsulClientHolder implements Comparable<ConsulClientHolder> {
     super();
     this.properties = properties;
     this.client = ConsulClientUtil.createConsulClient(properties);
-    log.info("Cluster ConsulClient[{}] created!", this.getClientId());
+    log.info(">>> Cluster ConsulClient[{}] created! <<<", this.getClientId());
     this.checkHealth(); // 创建时做一次健康检测
   }
 
@@ -62,14 +62,14 @@ public class ConsulClientHolder implements Comparable<ConsulClientHolder> {
 
     boolean tmpHealthy = false;
     try {
-      Response<Map<String, List<String>>> response = client.getCatalogServices(QueryParams.DEFAULT);
+      Response<Map<String, List<String>>> response = this.client.getCatalogServices(QueryParams.DEFAULT);
       tmpHealthy = !response.getValue().isEmpty();
     } catch (Exception e) {
-      log.error("Check consul client health failed : {}",
+      log.error(">>> Check consul client health failed : {} <<<",
           e.getMessage());
     }
     this.setHealthy(tmpHealthy);
-    log.info("Cluster consul client healthcheck finished: {}", this);
+    log.info(">>> Cluster consul client healthcheck finished: {} <<<", this);
   }
 
   /**

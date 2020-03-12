@@ -44,6 +44,7 @@ public class ClusterConsulBootstrapConfiguration {
     clusterConsulProperties.setClusterClientKey(hostInfo.getIpAddress());
     clusterConsulProperties.setClusterNodes(clusterConsulConfiguration.getClusterNodes());
     clusterConsulProperties.setNodeMode(clusterConsulConfiguration.getNodeMode());
+
     return clusterConsulProperties;
   }
 
@@ -52,7 +53,7 @@ public class ClusterConsulBootstrapConfiguration {
   public ConsulClient consulClient(ConsulProperties consulProperties) {
     ClusterConsulClient clusterConsulClient = new ClusterConsulClient((ClusterConsulProperties) consulProperties);
 
-    log.info("Default ConsulClient created : {}, with config properties : {}",
+    log.info(">>> Default ConsulClient created : {}, with config properties : {} <<<",
         clusterConsulClient, consulProperties);
     return clusterConsulClient;
   }

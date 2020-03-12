@@ -60,7 +60,7 @@ public class ClusterConsulProperties extends ConsulProperties {
    * 初始化时是否要求所有节点都必须是client节点
    */
   public boolean isOnlyClients() {
-    boolean onlyClients = NodeModeEnum.CLIENT.equals(nodeMode);
+    boolean onlyClients = NodeModeEnum.CLIENT.equals(this.nodeMode);
     return onlyClients;
   }
 
@@ -68,7 +68,7 @@ public class ClusterConsulProperties extends ConsulProperties {
    * 初始化时是否要求所有节点都必须是server节点
    */
   public boolean isOnlyServers() {
-    boolean onlyServers = NodeModeEnum.SERVER.equals(nodeMode);
+    boolean onlyServers = NodeModeEnum.SERVER.equals(this.nodeMode);
     return onlyServers;
   }
 
