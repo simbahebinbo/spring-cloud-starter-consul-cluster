@@ -31,7 +31,7 @@ public class CustomConsulServerList extends ConsulServerList {
   @Override
   public List<ConsulServer> getInitialListOfServers() {
     List<ConsulServer> servers = super.getInitialListOfServers();
-    log.info(">>> Get initial servers : {} <<<", servers);
+    log.info("lansheng228: >>> Get initial servers : {} <<<", servers);
 
     return servers;
   }
@@ -39,7 +39,7 @@ public class CustomConsulServerList extends ConsulServerList {
   @Override
   public List<ConsulServer> getUpdatedListOfServers() {
     List<ConsulServer> servers = super.getUpdatedListOfServers();
-    log.info(">>> Get update servers : {} <<<", servers);
+    log.info("lansheng228: >>> Get update servers : {} <<<", servers);
 
     return servers;
   }

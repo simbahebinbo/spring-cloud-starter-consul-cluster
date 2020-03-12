@@ -73,10 +73,10 @@ public class ConsulClientUtil {
       TLSConfig tlsConfig = new TLSConfig(tls.getKeyStoreInstanceType(),
           tls.getCertificatePath(), tls.getCertificatePassword(),
           tls.getKeyStorePath(), tls.getKeyStorePassword());
-      log.info(">>> agentHost: " + agentHost + "      agentPort: " + agentPort + "     tlsConfig: " + tlsConfig + " <<<");
+      log.info("lansheng228: >>> agentHost: " + agentHost + "      agentPort: " + agentPort + "     tlsConfig: " + tlsConfig + " <<<");
       consulClient = new ConsulClient(agentHost, agentPort, tlsConfig);
     } else {
-      log.info(">>> agentHost: " + agentHost + "      agentPort: " + agentPort + " <<<");
+      log.info("lansheng228: >>> agentHost: " + agentHost + "      agentPort: " + agentPort + " <<<");
       consulClient = new ConsulClient(agentHost, agentPort);
     }
     return consulClient;

@@ -895,7 +895,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
       try {
         response = consulClient.getClient().agentCheckPass(checkId);
       } catch (Exception e) {
-        log.error(">>> " + e.getMessage() + " <<<");
+        log.error("lansheng228: >>> " + e.getMessage() + " <<<");
       }
     }
     return response;
@@ -913,7 +913,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
       try {
         response = consulClient.getClient().agentCheckPass(checkId, note);
       } catch (Exception e) {
-        log.error(">>> " + e.getMessage() + " <<<");
+        log.error("lansheng228: >>> " + e.getMessage() + " <<<");
       }
     }
     return response;
@@ -931,7 +931,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
       try {
         response = consulClient.getClient().agentCheckPass(checkId, note, token);
       } catch (Exception e) {
-        log.error(">>> " + e.getMessage() + " <<<");
+        log.error("lansheng228: >>> " + e.getMessage() + " <<<");
       }
     }
     return response;
@@ -1087,7 +1087,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
       try {
         response = consulClient.getClient().agentReload();
       } catch (Exception e) {
-        log.error(">>> " + e.getMessage() + " <<<");
+        log.error("lansheng228: >>> " + e.getMessage() + " <<<");
       }
     }
     return response;
@@ -1147,7 +1147,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     }).sorted().collect(Collectors.toList()); // 排序
     connectList = tmpConsulClients.stream().map(ConsulClientHolder::getClientId)
         .collect(Collectors.toList());
-    log.info(">>> Creating cluster consul clients: {} <<<", connectList);
+    log.info("lansheng228: >>> Creating cluster consul clients: {} <<<", connectList);
     return tmpConsulClients;
   }
 
@@ -1156,7 +1156,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
    */
   protected List<String> prepareConnectList() {
     List<String> connectList = clusterConsulProperties.getClusterNodes();
-    log.info(">>> Connect list: " + connectList + " <<<");
+    log.info("lansheng228: >>> Connect list: " + connectList + " <<<");
     return connectList;
   }
 
@@ -1216,7 +1216,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
         List<ConsulClientHolder> availableClients = consulClients.stream()
             .filter(ConsulClientHolder::isHealthy).sorted()
             .collect(Collectors.toList());
-        log.info(">>> Available ConsulClients: " + availableClients + " <<<");
+        log.info("lansheng228: >>> Available ConsulClients: " + availableClients + " <<<");
         // 在健康节点中通过哈希一致性算法选取一个节点
         ConsulClientHolder choosedClient = ConsulClientUtil.chooseClient(
             clusterConsulProperties.getClusterClientKey(), availableClients);
@@ -1225,7 +1225,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
           checkConsulClientsHealth(); // 一个健康节点都没有，则立马执行一次全部健康检测
           throw new IllegalStateException("No consul client is available!!!");
         }
-        log.info(">>> Successfully choosed a new ConsulClient : {} <<<",
+        log.info("lansheng228: >>> Successfully choosed a new ConsulClient : {} <<<",
             choosedClient);
         this.currentClient = choosedClient;
       }
@@ -1243,12 +1243,12 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     context.setAttribute(CURRENT_CLIENT_KEY, currentClient);
     int retryCount = context.getRetryCount();
     if (!currentClient.isHealthy()) {
-      log.info(">>> Current ConsulClient[{}] Is Unhealthy. Choose Again! <<<",
+      log.info("lansheng228: >>> Current ConsulClient[{}] Is Unhealthy. Choose Again! <<<",
           currentClient.getClientId());
       chooseConsulClient();
     }
     if (retryCount > 0) {
-      log.info(">>> Using current ConsulClient[{}] for retry {} <<<",
+      log.info("lansheng228: >>> Using current ConsulClient[{}] for retry {} <<<",
           currentClient.getClientId(), retryCount);
     }
     return currentClient.getClient();
@@ -1295,7 +1295,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     boolean allHealthy = isAllConsulClientsHealthy(true);
     if (allHealthy && currentClient != primaryClient) { // 如果所有节点都是健康的，那么恢复currentClient为primaryClient
       currentClient = primaryClient;
-      log.info(">>> The primaryClient is recovered when all consul clients is healthy. <<<");
+      log.info("lansheng228: >>> The primaryClient is recovered when all consul clients is healthy. <<<");
     }
   }
 

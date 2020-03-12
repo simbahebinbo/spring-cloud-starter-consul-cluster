@@ -24,7 +24,7 @@ public class ConsulClientUtilTest {
     for (int i = 0; i < 10000; i++) {
       chooses.add(ConsulClientUtil.chooseClient(key, clients));
     }
-    log.info(">>> " + chooses.toString() + " <<<");
+    log.info("lansheng228: >>> " + chooses.toString() + " <<<");
     Assertions.assertEquals(1, chooses.size());
   }
 }

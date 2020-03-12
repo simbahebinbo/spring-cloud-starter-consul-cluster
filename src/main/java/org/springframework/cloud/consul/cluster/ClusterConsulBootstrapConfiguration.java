@@ -53,7 +53,7 @@ public class ClusterConsulBootstrapConfiguration {
   public ConsulClient consulClient(ConsulProperties consulProperties) {
     ClusterConsulClient clusterConsulClient = new ClusterConsulClient((ClusterConsulProperties) consulProperties);
 
-    log.info(">>> Default ConsulClient created : {}, with config properties : {} <<<",
+    log.info("lansheng228: >>> Default ConsulClient created : {}, with config properties : {} <<<",
         clusterConsulClient, consulProperties);
     return clusterConsulClient;
   }
