@@ -1294,7 +1294,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   protected void checkConsulClientsHealth() {
     boolean allHealthy = isAllConsulClientsHealthy(true);
     if (allHealthy && currentClient != primaryClient) { // 如果所有节点都是健康的，那么恢复currentClient为primaryClient
-      currentClient = primaryClient;
+//      currentClient = primaryClient;
       log.info("lansheng228: >>> The primaryClient is recovered when all consul clients is healthy. <<<");
     }
   }
