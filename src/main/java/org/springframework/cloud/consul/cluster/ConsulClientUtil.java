@@ -34,7 +34,7 @@ public class ConsulClientUtil {
    * @param clients - 在每次调用之前请确保clients的顺序是一致的
    */
   public static <T> T chooseClient(String key, List<T> clients) {
-    Assert.hasText(key, "Parameter 'key' must be required!");
+    Assert.hasText(key, "lansheng228: >>> Parameter 'key' must be required!");
     int prime = 31; // always used in hashcode method
     return chooseClient(Hashing.murmur3_128(prime).hashString(key, DEFAULT_CHARSET),
         clients);
@@ -47,7 +47,7 @@ public class ConsulClientUtil {
    * @param clients - 在每次调用之前请确保clients的顺序是一致的
    */
   public static <T> T chooseClient(HashCode keyHash, List<T> clients) {
-    Assert.notNull(keyHash, "Parameter 'keyHash' must be required!");
+    Assert.notNull(keyHash, "lansheng228: >>> Parameter 'keyHash' must be required!");
     if (!CollectionUtils.isEmpty(clients)) {
       final List<T> nodeList = new ArrayList<>(clients);
       int hitIndex = Hashing.consistentHash(keyHash, nodeList.size());

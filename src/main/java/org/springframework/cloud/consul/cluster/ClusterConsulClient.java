@@ -17,7 +17,6 @@ import java.util.stream.Collectors;
 
 import com.google.common.collect.Lists;
 
-import com.ecwid.consul.ConsulException;
 import com.ecwid.consul.transport.TransportException;
 import com.ecwid.consul.v1.ConsulClient;
 import com.ecwid.consul.v1.OperationException;
@@ -171,7 +170,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   public ClusterConsulClient(ClusterConsulProperties clusterConsulProperties) {
     super();
     Assert.notNull(clusterConsulProperties,
-        "Parameter 'consulProperties' must be required!");
+        "lansheng228: >>> Parameter 'consulProperties' must be required!");
     this.clusterConsulProperties = clusterConsulProperties;
     // 创建所有集群节点
     this.consulClients = createConsulClients();
@@ -182,18 +181,18 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
 
     // 如果存在不可用节点则立即快速失败
     Assert.state(this.consulClients.stream().allMatch(ConsulClientHolder::isHealthy),
-        "Creating ClusterConsulClient failed：all consul nodes of cluster must be available!");
+        "lansheng228: >>> Creating ClusterConsulClient failed：all consul nodes of cluster must be available!");
 
     List<String> modeList = getAllConsulAgentMode();
     // 集群中的节点只能是client模式的节点?
     if (clusterConsulProperties.isOnlyClients()) {
       boolean isAllClientNode = modeList.stream().allMatch(CLIENT::equals);
       Assert.state(isAllClientNode,
-          "Creating ClusterConsulClient failed：all consul nodes of cluster must be in 'client' mode!");
+          "lansheng228: >>> Creating ClusterConsulClient failed：all consul nodes of cluster must be in 'client' mode!");
     } else if (clusterConsulProperties.isOnlyServers()) {
       boolean isAllServerNode = modeList.stream().allMatch(SERVER::equals);
       Assert.state(isAllServerNode,
-          "Creating ClusterConsulClient failed：all consul nodes of cluster must be in 'server' mode!");
+          "lansheng228: >>> Creating ClusterConsulClient failed：all consul nodes of cluster must be in 'server' mode!");
     }
     this.primaryClient = tmpPrimaryClient;
     this.currentClient = tmpPrimaryClient;
@@ -217,671 +216,1088 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
 
   @Override
   public Response<String> getStatusLeader() {
-    return retryTemplate
-        .execute((RetryCallback<Response<String>, ConsulException>) context -> getRetryConsulClient(context).getStatusLeader());
+    return retryTemplate.execute(context -> {
+      Response<String> leader = getRetryConsulClient(context).getStatusLeader();
+      log.info("lansheng228: >>> function getStatusLeader => leader: {} <<<", leader);
+
+      return leader;
+    });
   }
 
   @Override
   public Response<List<String>> getStatusPeers() {
-    return retryTemplate
-        .execute((RetryCallback<Response<List<String>>, ConsulException>) context -> getRetryConsulClient(context).getStatusPeers());
+    return retryTemplate.execute(context -> {
+      Response<List<String>> peers = getRetryConsulClient(context).getStatusPeers();
+      log.info("lansheng228: >>> function getStatusPeers => peers: {} <<<", peers);
+
+      return peers;
+    });
   }
 
   @Override
-  public Response<String> sessionCreate(NewSession newSession,
-      QueryParams queryParams) {
-    return retryTemplate
-        .execute((RetryCallback<Response<String>, ConsulException>) context -> getRetryConsulClient(context).sessionCreate(newSession,
-            queryParams));
+  public Response<String> sessionCreate(NewSession newSession, QueryParams queryParams) {
+    return retryTemplate.execute(context -> {
+      Response<String> sessionCreate = getRetryConsulClient(context).sessionCreate(newSession, queryParams);
+      log.info("lansheng228: >>> function sessionCreate => newSession: {} === queryParams: {} === sessionCreate: {} <<<", newSession, queryParams,
+          sessionCreate);
+
+      return sessionCreate;
+    });
   }
 
   @Override
-  public Response<String> sessionCreate(NewSession newSession, QueryParams queryParams,
-      String token) {
-    return retryTemplate
-        .execute((RetryCallback<Response<String>, ConsulException>) context -> getRetryConsulClient(context).sessionCreate(newSession,
-            queryParams, token));
+  public Response<String> sessionCreate(NewSession newSession, QueryParams queryParams, String token) {
+    return retryTemplate.execute(context -> {
+      Response<String> sessionCreate = getRetryConsulClient(context).sessionCreate(newSession,
+          queryParams, token);
+      log.info("lansheng228: >>> function sessionCreate => newSession: {} === queryParams: {} === token: {} === sessionCreate: {} <<<", newSession,
+          queryParams, token, sessionCreate);
+
+      return sessionCreate;
+    });
   }
 
   @Override
   public Response<Void> sessionDestroy(String session, QueryParams queryParams) {
-    return retryTemplate
-        .execute((RetryCallback<Response<Void>, ConsulException>) context -> getRetryConsulClient(context).sessionDestroy(session,
-            queryParams));
+    return retryTemplate.execute(context -> {
+      log.info("lansheng228: >>> function sessionDestroy => session: {} === queryParams: {}  <<<", session, queryParams);
+
+      return getRetryConsulClient(context).sessionDestroy(session, queryParams);
+    });
   }
 
   @Override
-  public Response<Void> sessionDestroy(String session, QueryParams queryParams,
-      String token) {
-    return retryTemplate
-        .execute((RetryCallback<Response<Void>, ConsulException>) context -> getRetryConsulClient(context).sessionDestroy(session,
-            queryParams, token));
+  public Response<Void> sessionDestroy(String session, QueryParams queryParams, String token) {
+    return retryTemplate.execute(context -> {
+      log.info("lansheng228: >>> function sessionDestroy => session: {} === queryParams: {}  === token: {} <<<", session, queryParams, token);
+
+      return getRetryConsulClient(context).sessionDestroy(session, queryParams, token);
+    });
   }
 
   @Override
   public Response<Session> getSessionInfo(String session, QueryParams queryParams) {
-    return retryTemplate
-        .execute((RetryCallback<Response<Session>, ConsulException>) context -> getRetryConsulClient(context).getSessionInfo(session,
-            queryParams));
+    return retryTemplate.execute(context -> {
+      Response<Session> sessionInfo = getRetryConsulClient(context).getSessionInfo(session, queryParams);
+      log.info("lansheng228: >>> function getSessionInfo => session: {} === queryParams: {}  === sessionInfo: {} <<<", session, queryParams,
+          sessionInfo);
+
+      return sessionInfo;
+    });
   }
 
   @Override
-  public Response<Session> getSessionInfo(String session, QueryParams queryParams,
-      String token) {
-    return retryTemplate
-        .execute((RetryCallback<Response<Session>, ConsulException>) context -> getRetryConsulClient(context).getSessionInfo(session,
-            queryParams, token));
+  public Response<Session> getSessionInfo(String session, QueryParams queryParams, String token) {
+    return retryTemplate.execute(context -> {
+      Response<Session> sessionInfo = getRetryConsulClient(context).getSessionInfo(session, queryParams, token);
+      log.info("lansheng228: >>> function getSessionInfo => session: {} === queryParams: {}  === sessionInfo: {} <<<", session, queryParams,
+          sessionInfo);
+
+      return sessionInfo;
+    });
   }
 
   @Override
   public Response<List<Session>> getSessionNode(String node, QueryParams queryParams) {
-    return retryTemplate
-        .execute((RetryCallback<Response<List<Session>>, ConsulException>) context -> getRetryConsulClient(context).getSessionNode(node,
-            queryParams));
+    return retryTemplate.execute(context -> {
+      Response<List<Session>> sessionNode = getRetryConsulClient(context).getSessionNode(node, queryParams);
+      log.info("lansheng228: >>> function getSessionNode => node: {} === queryParams: {}  === sessionNode: {} <<<", node, queryParams, sessionNode);
+
+      return sessionNode;
+    });
   }
 
   @Override
-  public Response<List<Session>> getSessionNode(String node, QueryParams queryParams,
-      String token) {
-    return retryTemplate
-        .execute((RetryCallback<Response<List<Session>>, ConsulException>) context -> getRetryConsulClient(context).getSessionNode(node,
-            queryParams, token));
+  public Response<List<Session>> getSessionNode(String node, QueryParams queryParams, String token) {
+    return retryTemplate.execute(context -> {
+      Response<List<Session>> sessionNode = getRetryConsulClient(context).getSessionNode(node,
+          queryParams, token);
+      log.info("lansheng228: >>> function getSessionNode => node: {} === queryParams: {}  === token: {}  === sessionNode: {} <<<", node, queryParams,
+          token, sessionNode);
+
+      return sessionNode;
+    });
   }
 
   @Override
   public Response<List<Session>> getSessionList(QueryParams queryParams) {
-    return retryTemplate
-        .execute((RetryCallback<Response<List<Session>>, ConsulException>) context -> getRetryConsulClient(context).getSessionList(queryParams));
+    return retryTemplate.execute(context -> {
+      Response<List<Session>> sessionList = getRetryConsulClient(context).getSessionList(queryParams);
+      log.info("lansheng228: >>> function getSessionList => queryParams: {}   === sessionList: {} <<<", queryParams, sessionList);
+
+      return sessionList;
+    });
   }
 
   @Override
   public Response<List<Session>> getSessionList(QueryParams queryParams, String token) {
-    return retryTemplate
-        .execute((RetryCallback<Response<List<Session>>, ConsulException>) context -> getRetryConsulClient(context).getSessionList(queryParams,
-            token));
+    return retryTemplate.execute(context -> {
+      Response<List<Session>> sessionList = getRetryConsulClient(context).getSessionList(queryParams, token);
+      log.info("lansheng228: >>> function getSessionList => queryParams: {}   === token: {} === sessionList: {} <<<", queryParams, token,
+          sessionList);
+
+      return sessionList;
+    });
   }
 
   @Override
   public Response<Session> renewSession(String session, QueryParams queryParams) {
-    return retryTemplate
-        .execute((RetryCallback<Response<Session>, ConsulException>) context -> getRetryConsulClient(context).renewSession(session,
-            queryParams));
+    return retryTemplate.execute(context -> {
+      Response<Session> renewSession = getRetryConsulClient(context).renewSession(session,
+          queryParams);
+      log.info("lansheng228: >>> function renewSession => session: {}   ===  queryParams: {}   === renewSession: {} <<<", session, queryParams,
+          renewSession);
+
+      return renewSession;
+    });
   }
 
   @Override
-  public Response<Session> renewSession(String session, QueryParams queryParams,
-      String token) {
-    return retryTemplate
-        .execute((RetryCallback<Response<Session>, ConsulException>) context -> getRetryConsulClient(context).renewSession(session,
-            queryParams, token));
+  public Response<Session> renewSession(String session, QueryParams queryParams, String token) {
+    return retryTemplate.execute(context -> {
+      Response<Session> renewSession = getRetryConsulClient(context).renewSession(session,
+          queryParams, token);
+      log.info("lansheng228: >>> function renewSession => session: {}   ===  queryParams: {}   === token: {} === renewSession: {} <<<", session,
+          queryParams, token, renewSession);
+
+      return renewSession;
+    });
   }
 
   @Override
-  public Response<QueryExecution> executePreparedQuery(String uuid,
-      QueryParams queryParams) {
-    return retryTemplate
-        .execute((RetryCallback<Response<QueryExecution>, ConsulException>) context -> getRetryConsulClient(context).executePreparedQuery(uuid,
-            queryParams));
+  public Response<QueryExecution> executePreparedQuery(String uuid, QueryParams queryParams) {
+    return retryTemplate.execute(context -> {
+      Response<QueryExecution> queryExecution = getRetryConsulClient(context).executePreparedQuery(uuid,
+          queryParams);
+      log.info("lansheng228: >>> function executePreparedQuery => uuid: {}   ===  queryParams: {}   === queryExecution: {}  <<<", uuid,
+          queryParams, queryExecution);
+
+      return queryExecution;
+    });
   }
 
   @Override
   public Response<GetValue> getKVValue(String key) {
-    return retryTemplate
-        .execute((RetryCallback<Response<GetValue>, ConsulException>) context -> getRetryConsulClient(context).getKVValue(key));
+    return retryTemplate.execute(context -> {
+      Response<GetValue> value = getRetryConsulClient(context).getKVValue(key);
+      log.info("lansheng228: >>> function getKVValue => key: {}   ===  value: {} <<<", key, value);
+
+      return value;
+    });
   }
 
   @Override
   public Response<GetValue> getKVValue(String key, String token) {
-    return retryTemplate
-        .execute((RetryCallback<Response<GetValue>, ConsulException>) context -> getRetryConsulClient(context).getKVValue(key, token));
+    return retryTemplate.execute(context -> {
+      Response<GetValue> value = getRetryConsulClient(context).getKVValue(key, token);
+      log.info("lansheng228: >>> function getKVValue => key: {}   ===  token: {}  ===  value: {} <<<", key, token, value);
+
+      return value;
+    });
   }
 
   @Override
   public Response<GetValue> getKVValue(String key, QueryParams queryParams) {
-    return retryTemplate
-        .execute((RetryCallback<Response<GetValue>, ConsulException>) context -> getRetryConsulClient(context).getKVValue(key, queryParams));
+    return retryTemplate.execute(context -> {
+      Response<GetValue> value = getRetryConsulClient(context).getKVValue(key, queryParams);
+      log.info("lansheng228: >>> function getKVValue => key: {}   ===  queryParams: {}  ===  value: {} <<<", key, queryParams, value);
+
+      return value;
+    });
   }
 
   @Override
-  public Response<GetValue> getKVValue(String key, String token,
-      QueryParams queryParams) {
-    return retryTemplate
-        .execute((RetryCallback<Response<GetValue>, ConsulException>) context -> getRetryConsulClient(context).getKVValue(key, token,
-            queryParams));
+  public Response<GetValue> getKVValue(String key, String token, QueryParams queryParams) {
+    return retryTemplate.execute(context -> {
+      Response<GetValue> value = getRetryConsulClient(context).getKVValue(key, token,
+          queryParams);
+      log.info("lansheng228: >>> function getKVValue => key: {}   ===  token: {}  ===  queryParams: {}  ===  value: {} <<<", key, token, queryParams,
+          value);
+
+      return value;
+    });
   }
 
   @Override
   public Response<GetBinaryValue> getKVBinaryValue(String key) {
-    return retryTemplate
-        .execute((RetryCallback<Response<GetBinaryValue>, ConsulException>) context -> getRetryConsulClient(context).getKVBinaryValue(key));
+    return retryTemplate.execute(context -> {
+      Response<GetBinaryValue> binaryValue = getRetryConsulClient(context).getKVBinaryValue(key);
+      log.info("lansheng228: >>> function getKVBinaryValue => key: {}  ===  binaryValue: {} <<<", key, binaryValue);
+
+      return binaryValue;
+    });
   }
 
   @Override
   public Response<GetBinaryValue> getKVBinaryValue(String key, String token) {
-    return retryTemplate
-        .execute((RetryCallback<Response<GetBinaryValue>, ConsulException>) context -> getRetryConsulClient(context).getKVBinaryValue(key, token));
+    return retryTemplate.execute(context -> {
+      Response<GetBinaryValue> binaryValue = getRetryConsulClient(context).getKVBinaryValue(key, token);
+      log.info("lansheng228: >>> function getKVBinaryValue => key: {}  ===  token: {}  ===  binaryValue: {} <<<", key, token, binaryValue);
+
+      return binaryValue;
+    });
   }
 
   @Override
-  public Response<GetBinaryValue> getKVBinaryValue(String key,
-      QueryParams queryParams) {
-    return retryTemplate
-        .execute((RetryCallback<Response<GetBinaryValue>, ConsulException>) context -> getRetryConsulClient(context).getKVBinaryValue(key,
-            queryParams));
+  public Response<GetBinaryValue> getKVBinaryValue(String key, QueryParams queryParams) {
+    return retryTemplate.execute(context -> {
+      Response<GetBinaryValue> binaryValue = getRetryConsulClient(context).getKVBinaryValue(key,
+          queryParams);
+      log.info("lansheng228: >>> function getKVBinaryValue => key: {}  ===  queryParams: {}  ===  binaryValue: {} <<<", key, queryParams,
+          binaryValue);
+
+      return binaryValue;
+    });
   }
 
   @Override
-  public Response<GetBinaryValue> getKVBinaryValue(String key, String token,
-      QueryParams queryParams) {
-    return retryTemplate
-        .execute((RetryCallback<Response<GetBinaryValue>, ConsulException>) context -> getRetryConsulClient(context).getKVBinaryValue(key, token,
-            queryParams));
+  public Response<GetBinaryValue> getKVBinaryValue(String key, String token, QueryParams queryParams) {
+    return retryTemplate.execute(context -> {
+      Response<GetBinaryValue> binaryValue = getRetryConsulClient(context).getKVBinaryValue(key, token,
+          queryParams);
+      log.info("lansheng228: >>> function getKVBinaryValue => key: {}  ===  token: {}  ===  queryParams: {}  ===  binaryValue: {} <<<", key, token,
+          queryParams, binaryValue);
+
+      return binaryValue;
+    });
   }
 
   @Override
   public Response<List<GetValue>> getKVValues(String keyPrefix) {
-    return retryTemplate
-        .execute((RetryCallback<Response<List<GetValue>>, ConsulException>) context -> getRetryConsulClient(context).getKVValues(keyPrefix));
+    return retryTemplate.execute(context -> {
+      Response<List<GetValue>> valueList = getRetryConsulClient(context).getKVValues(keyPrefix);
+      log.info("lansheng228: >>> function getKVValues => keyPrefix: {}  ===  valueList: {} <<<", keyPrefix, valueList);
+
+      return valueList;
+    });
   }
 
   @Override
   public Response<List<GetValue>> getKVValues(String keyPrefix, String token) {
-    return retryTemplate
-        .execute((RetryCallback<Response<List<GetValue>>, ConsulException>) context -> getRetryConsulClient(context).getKVValues(keyPrefix,
-            token));
+    return retryTemplate.execute(context -> {
+      Response<List<GetValue>> valueList = getRetryConsulClient(context).getKVValues(keyPrefix,
+          token);
+      log.info("lansheng228: >>> function getKVValues => keyPrefix: {}  ===  token: {}  ===  valueList: {} <<<", keyPrefix, token, valueList);
+
+      return valueList;
+    });
   }
 
   @Override
-  public Response<List<GetValue>> getKVValues(String keyPrefix,
-      QueryParams queryParams) {
-    return retryTemplate
-        .execute((RetryCallback<Response<List<GetValue>>, ConsulException>) context -> getRetryConsulClient(context).getKVValues(keyPrefix,
-            queryParams));
+  public Response<List<GetValue>> getKVValues(String keyPrefix, QueryParams queryParams) {
+    return retryTemplate.execute(context -> {
+      Response<List<GetValue>> valueList = getRetryConsulClient(context).getKVValues(keyPrefix,
+          queryParams);
+      log.info("lansheng228: >>> function getKVValues => keyPrefix: {}  ===  queryParams: {}  ===  valueList: {} <<<", keyPrefix, queryParams,
+          valueList);
+
+      return valueList;
+    });
   }
 
   @Override
-  public Response<List<GetValue>> getKVValues(String keyPrefix, String token,
-      QueryParams queryParams) {
-    return retryTemplate
-        .execute((RetryCallback<Response<List<GetValue>>, ConsulException>) context -> getRetryConsulClient(context).getKVValues(keyPrefix, token,
-            queryParams));
+  public Response<List<GetValue>> getKVValues(String keyPrefix, String token, QueryParams queryParams) {
+    return retryTemplate.execute(context -> {
+      Response<List<GetValue>> valueList = getRetryConsulClient(context).getKVValues(keyPrefix, token,
+          queryParams);
+      log.info("lansheng228: >>> function getKVValues => keyPrefix: {}  ===  token: {}  ===  queryParams: {}  ===  valueList: {} <<<", keyPrefix,
+          token, queryParams, valueList);
+
+      return valueList;
+    });
   }
 
   @Override
   public Response<List<GetBinaryValue>> getKVBinaryValues(String keyPrefix) {
-    return retryTemplate.execute(
-        (RetryCallback<Response<List<GetBinaryValue>>, ConsulException>) context -> getRetryConsulClient(context).getKVBinaryValues(keyPrefix));
+    return retryTemplate.execute(context -> {
+      Response<List<GetBinaryValue>> binaryValueList = getRetryConsulClient(context).getKVBinaryValues(keyPrefix);
+      log.info("lansheng228: >>> function getKVBinaryValues => keyPrefix: {}  ===  binaryValueList: {} <<<", keyPrefix,
+          binaryValueList);
+
+      return binaryValueList;
+    });
   }
 
   @Override
-  public Response<List<GetBinaryValue>> getKVBinaryValues(String keyPrefix,
-      String token) {
-    return retryTemplate.execute(
-        (RetryCallback<Response<List<GetBinaryValue>>, ConsulException>) context -> getRetryConsulClient(context).getKVBinaryValues(keyPrefix,
-            token));
+  public Response<List<GetBinaryValue>> getKVBinaryValues(String keyPrefix, String token) {
+    return retryTemplate.execute(context -> {
+      Response<List<GetBinaryValue>> binaryValueList = getRetryConsulClient(context).getKVBinaryValues(keyPrefix, token);
+      log.info("lansheng228: >>> function getKVBinaryValues => keyPrefix: {}  ===  token: {}  ===  binaryValueList: {} <<<", keyPrefix, token,
+          binaryValueList);
+
+      return binaryValueList;
+    });
   }
 
   @Override
-  public Response<List<GetBinaryValue>> getKVBinaryValues(String keyPrefix,
-      QueryParams queryParams) {
-    return retryTemplate.execute(
-        (RetryCallback<Response<List<GetBinaryValue>>, ConsulException>) context -> getRetryConsulClient(context).getKVBinaryValues(keyPrefix,
-            queryParams));
+  public Response<List<GetBinaryValue>> getKVBinaryValues(String keyPrefix, QueryParams queryParams) {
+    return retryTemplate.execute(context -> {
+      Response<List<GetBinaryValue>> binaryValueList = getRetryConsulClient(context).getKVBinaryValues(keyPrefix,
+          queryParams);
+      log.info("lansheng228: >>> function getKVBinaryValues => keyPrefix: {}  ===  queryParams: {}  ===  binaryValueList: {} <<<", keyPrefix,
+          queryParams,
+          binaryValueList);
+
+      return binaryValueList;
+    });
   }
 
   @Override
-  public Response<List<GetBinaryValue>> getKVBinaryValues(String keyPrefix,
-      String token, QueryParams queryParams) {
-    return retryTemplate.execute(
-        (RetryCallback<Response<List<GetBinaryValue>>, ConsulException>) context -> getRetryConsulClient(context).getKVBinaryValues(keyPrefix,
-            token, queryParams));
+  public Response<List<GetBinaryValue>> getKVBinaryValues(String keyPrefix, String token, QueryParams queryParams) {
+    return retryTemplate.execute(context -> {
+      Response<List<GetBinaryValue>> binaryValueList = getRetryConsulClient(context).getKVBinaryValues(keyPrefix, token, queryParams);
+      log.info("lansheng228: >>> function getKVBinaryValues => keyPrefix: {}  ===  token: {}  ===  queryParams: {}  ===  binaryValueList: {} <<<",
+          keyPrefix, token, queryParams, binaryValueList);
+
+      return binaryValueList;
+    });
   }
 
   @Override
   public Response<List<String>> getKVKeysOnly(String keyPrefix) {
-    return retryTemplate
-        .execute((RetryCallback<Response<List<String>>, ConsulException>) context -> getRetryConsulClient(context).getKVKeysOnly(keyPrefix));
+    return retryTemplate.execute(context -> {
+      Response<List<String>> keyList = getRetryConsulClient(context).getKVKeysOnly(keyPrefix);
+      log.info("lansheng228: >>> function getKVKeysOnly => keyPrefix: {}  ===  keyList: {} <<<",
+          keyPrefix, keyList);
+
+      return keyList;
+    });
   }
 
   @Override
-  public Response<List<String>> getKVKeysOnly(String keyPrefix, String separator,
-      String token) {
-    return retryTemplate
-        .execute((RetryCallback<Response<List<String>>, ConsulException>) context -> getRetryConsulClient(context).getKVKeysOnly(keyPrefix,
-            separator, token));
+  public Response<List<String>> getKVKeysOnly(String keyPrefix, String separator, String token) {
+    return retryTemplate.execute(context -> {
+      Response<List<String>> keyList = getRetryConsulClient(context).getKVKeysOnly(keyPrefix,
+          separator, token);
+      log.info("lansheng228: >>> function getKVKeysOnly => keyPrefix: {}  ===  separator: {}  ===  token: {}  ===  keyList: {} <<<",
+          keyPrefix, separator, token, keyList);
+
+      return keyList;
+    });
   }
 
   @Override
-  public Response<List<String>> getKVKeysOnly(String keyPrefix,
-      QueryParams queryParams) {
-    return retryTemplate
-        .execute((RetryCallback<Response<List<String>>, ConsulException>) context -> getRetryConsulClient(context).getKVKeysOnly(keyPrefix,
-            queryParams));
+  public Response<List<String>> getKVKeysOnly(String keyPrefix, QueryParams queryParams) {
+    return retryTemplate.execute(context -> {
+      Response<List<String>> keyList = getRetryConsulClient(context).getKVKeysOnly(keyPrefix, queryParams);
+      log.info("lansheng228: >>> function getKVKeysOnly => keyPrefix: {}  ===  queryParams: {} ===  keyList: {} <<<",
+          keyPrefix, queryParams, keyList);
+
+      return keyList;
+    });
   }
 
   @Override
-  public Response<List<String>> getKVKeysOnly(String keyPrefix, String separator,
-      String token, QueryParams queryParams) {
-    return retryTemplate
-        .execute((RetryCallback<Response<List<String>>, ConsulException>) context -> getRetryConsulClient(context).getKVKeysOnly(keyPrefix,
-            separator, token, queryParams));
+  public Response<List<String>> getKVKeysOnly(String keyPrefix, String separator, String token, QueryParams queryParams) {
+    return retryTemplate.execute(context -> {
+      Response<List<String>> keyList = getRetryConsulClient(context).getKVKeysOnly(keyPrefix,
+          separator, token, queryParams);
+      log.info(
+          "lansheng228: >>> function getKVKeysOnly => keyPrefix: {}  ===  separator: {}  ===  token: {}  ===  queryParams: {} ===  keyList: {} <<<",
+          keyPrefix, separator, token, queryParams, keyList);
+
+      return keyList;
+    });
   }
 
   @Override
   public Response<Boolean> setKVValue(String key, String value) {
-    return retryTemplate
-        .execute((RetryCallback<Response<Boolean>, ConsulException>) context -> getRetryConsulClient(context).setKVValue(key, value));
+    return retryTemplate.execute(context -> {
+      Response<Boolean> result = getRetryConsulClient(context).setKVValue(key, value);
+      log.info(
+          "lansheng228: >>> function setKVValue => key: {}  ===  value: {}  ===  result: {} <<<",
+          key, value, result);
+
+      return result;
+    });
   }
 
   @Override
   public Response<Boolean> setKVValue(String key, String value, PutParams putParams) {
-    return retryTemplate
-        .execute((RetryCallback<Response<Boolean>, ConsulException>) context -> getRetryConsulClient(context).setKVValue(key, value,
-            putParams));
+    return retryTemplate.execute(context -> {
+      Response<Boolean> result = getRetryConsulClient(context).setKVValue(key, value, putParams);
+      log.info(
+          "lansheng228: >>> function setKVValue => key: {}  ===  value: {}  ===  putParams: {} ===  result: {} <<<",
+          key, value, putParams, result);
+
+      return result;
+    });
   }
 
   @Override
   public Response<Boolean> setKVValue(String key, String value, String token,
       PutParams putParams) {
-    return retryTemplate
-        .execute((RetryCallback<Response<Boolean>, ConsulException>) context -> getRetryConsulClient(context).setKVValue(key, value, token,
-            putParams));
+    return retryTemplate.execute(context -> {
+      Response<Boolean> result = getRetryConsulClient(context).setKVValue(key, value, token,
+          putParams);
+      log.info(
+          "lansheng228: >>> function setKVValue => key: {}  ===  value: {}  ===  token: {}  ===  putParams: {} ===  result: {} <<<",
+          key, value, token, putParams, result);
+
+      return result;
+    });
   }
 
   @Override
-  public Response<Boolean> setKVValue(String key, String value,
-      QueryParams queryParams) {
-    return retryTemplate
-        .execute((RetryCallback<Response<Boolean>, ConsulException>) context -> getRetryConsulClient(context).setKVValue(key, value,
-            queryParams));
+  public Response<Boolean> setKVValue(String key, String value, QueryParams queryParams) {
+    return retryTemplate.execute(context -> {
+      Response<Boolean> result = getRetryConsulClient(context).setKVValue(key, value, queryParams);
+      log.info(
+          "lansheng228: >>> function setKVValue => key: {}  ===  value: {}  ===  queryParams: {} ===  result: {} <<<",
+          key, value, queryParams, result);
+
+      return result;
+    });
   }
 
   @Override
-  public Response<Boolean> setKVValue(String key, String value, PutParams putParams,
-      QueryParams queryParams) {
-    return retryTemplate
-        .execute((RetryCallback<Response<Boolean>, ConsulException>) context -> getRetryConsulClient(context).setKVValue(key, value,
-            putParams, queryParams));
+  public Response<Boolean> setKVValue(String key, String value, PutParams putParams, QueryParams queryParams) {
+    return retryTemplate.execute(context -> {
+      Response<Boolean> result = getRetryConsulClient(context).setKVValue(key, value, putParams, queryParams);
+      log.info(
+          "lansheng228: >>> function setKVValue => key: {}  ===  value: {}  ===  putParams: {}  ===  queryParams: {} ===  result: {} <<<",
+          key, value, putParams, queryParams, result);
+
+      return result;
+    });
   }
 
   @Override
   public Response<Boolean> setKVValue(String key, String value, String token,
       PutParams putParams, QueryParams queryParams) {
-    return retryTemplate
-        .execute((RetryCallback<Response<Boolean>, ConsulException>) context -> getRetryConsulClient(context).setKVValue(key, value, token,
-            putParams, queryParams));
+    return retryTemplate.execute(context -> {
+      Response<Boolean> result = getRetryConsulClient(context).setKVValue(key, value, token,
+          putParams, queryParams);
+      log.info(
+          "lansheng228: >>> function setKVValue => key: {}  ===  value: {}  ===  token: {}   ===  putParams: {}  ===  queryParams: {} ===  result: {} <<<",
+          key, value, token, putParams, queryParams, result);
+
+      return result;
+    });
   }
 
   @Override
   public Response<Boolean> setKVBinaryValue(String key, byte[] value) {
-    return retryTemplate
-        .execute((RetryCallback<Response<Boolean>, ConsulException>) context -> getRetryConsulClient(context).setKVBinaryValue(key, value));
+    return retryTemplate.execute(context -> {
+      Response<Boolean> result = getRetryConsulClient(context).setKVBinaryValue(key, value);
+      log.info(
+          "lansheng228: >>> function setKVBinaryValue => key: {}  ===  value: {}  ===  result: {} <<<",
+          key, value, result);
+
+      return result;
+    });
   }
 
   @Override
-  public Response<Boolean> setKVBinaryValue(String key, byte[] value,
-      PutParams putParams) {
-    return retryTemplate
-        .execute((RetryCallback<Response<Boolean>, ConsulException>) context -> getRetryConsulClient(context).setKVBinaryValue(key, value,
-            putParams));
+  public Response<Boolean> setKVBinaryValue(String key, byte[] value, PutParams putParams) {
+    return retryTemplate.execute(context -> {
+      Response<Boolean> result = getRetryConsulClient(context).setKVBinaryValue(key, value, putParams);
+      log.info(
+          "lansheng228: >>> function setKVBinaryValue => key: {}  ===  value: {}  ===  putParams: {}  ===  result: {} <<<",
+          key, value, putParams, result);
+
+      return result;
+    });
+  }
+
+  @Override
+  public Response<Boolean> setKVBinaryValue(String key, byte[] value, String token, PutParams putParams) {
+    return retryTemplate.execute(context -> {
+      Response<Boolean> result = getRetryConsulClient(context).setKVBinaryValue(key, value,
+          token, putParams);
+      log.info(
+          "lansheng228: >>> function setKVBinaryValue => key: {}  ===  value: {}  ===  token: {}  ===  putParams: {}  ===  result: {} <<<",
+          key, value, token, putParams, result);
+
+      return result;
+    });
+  }
+
+  @Override
+  public Response<Boolean> setKVBinaryValue(String key, byte[] value, QueryParams queryParams) {
+    return retryTemplate.execute(context -> {
+      Response<Boolean> result = getRetryConsulClient(context).setKVBinaryValue(key, value, queryParams);
+      log.info(
+          "lansheng228: >>> function setKVBinaryValue => key: {}  ===  value: {}  ===  queryParams: {}  ===  result: {} <<<",
+          key, value, queryParams, result);
+
+      return result;
+    });
+  }
+
+  @Override
+  public Response<Boolean> setKVBinaryValue(String key, byte[] value, PutParams putParams, QueryParams queryParams) {
+    return retryTemplate.execute(context -> {
+      Response<Boolean> result = getRetryConsulClient(context).setKVBinaryValue(key, value, putParams, queryParams);
+      log.info(
+          "lansheng228: >>> function setKVBinaryValue => key: {}  ===  value: {}  ===  putParams: {}   ===  queryParams: {}  ===  result: {} <<<",
+          key, value, putParams, queryParams, result);
+
+      return result;
+    });
   }
 
   @Override
   public Response<Boolean> setKVBinaryValue(String key, byte[] value, String token,
-      PutParams putParams) {
-    return retryTemplate
-        .execute((RetryCallback<Response<Boolean>, ConsulException>) context -> getRetryConsulClient(context).setKVBinaryValue(key, value,
-            token, putParams));
-  }
-
-  @Override
-  public Response<Boolean> setKVBinaryValue(String key, byte[] value,
-      QueryParams queryParams) {
-    return retryTemplate
-        .execute((RetryCallback<Response<Boolean>, ConsulException>) context -> getRetryConsulClient(context).setKVBinaryValue(key, value,
-            queryParams));
-  }
-
-  @Override
-  public Response<Boolean> setKVBinaryValue(String key, byte[] value,
       PutParams putParams, QueryParams queryParams) {
-    return retryTemplate
-        .execute((RetryCallback<Response<Boolean>, ConsulException>) context -> getRetryConsulClient(context).setKVBinaryValue(key, value,
-            putParams, queryParams));
-  }
+    return retryTemplate.execute(context -> {
+      Response<Boolean> result = getRetryConsulClient(context).setKVBinaryValue(key, value,
+          token, putParams, queryParams);
+      log.info(
+          "lansheng228: >>> function setKVBinaryValue => key: {}  ===  value: {}  ===  putParams: {}   ===  queryParams: {}  ===  result: {} <<<",
+          key, value, putParams, queryParams, result);
 
-  @Override
-  public Response<Boolean> setKVBinaryValue(String key, byte[] value, String token,
-      PutParams putParams, QueryParams queryParams) {
-    return retryTemplate
-        .execute((RetryCallback<Response<Boolean>, ConsulException>) context -> getRetryConsulClient(context).setKVBinaryValue(key, value,
-            token, putParams, queryParams));
+      return result;
+    });
   }
 
   @Override
   public Response<Void> deleteKVValue(String key) {
-    return retryTemplate
-        .execute((RetryCallback<Response<Void>, ConsulException>) context -> getRetryConsulClient(context).deleteKVValue(key));
+    return retryTemplate.execute(context -> {
+      Response<Void> result = getRetryConsulClient(context).deleteKVValue(key);
+      log.info("lansheng228: >>> function deleteKVValue => key: {} ===  result: {} <<<", key, result);
+
+      return result;
+    });
   }
 
   @Override
   public Response<Void> deleteKVValue(String key, String token) {
-    return retryTemplate
-        .execute((RetryCallback<Response<Void>, ConsulException>) context -> getRetryConsulClient(context).deleteKVValue(key, token));
+    return retryTemplate.execute(context -> {
+      Response<Void> result = getRetryConsulClient(context).deleteKVValue(key, token);
+      log.info("lansheng228: >>> function deleteKVValue => key: {}  ===  token: {}  ===  result: {} <<<", key, token, result);
+
+      return result;
+    });
   }
 
   @Override
   public Response<Void> deleteKVValue(String key, QueryParams queryParams) {
-    return retryTemplate
-        .execute((RetryCallback<Response<Void>, ConsulException>) context -> getRetryConsulClient(context).deleteKVValue(key,
-            queryParams));
+    return retryTemplate.execute(context -> {
+      Response<Void> result = getRetryConsulClient(context).deleteKVValue(key, queryParams);
+      log.info("lansheng228: >>> function deleteKVValue => key: {}  ===  queryParams: {}  ===  result: {} <<<", key, queryParams, result);
+
+      return result;
+    });
   }
 
   @Override
-  public Response<Void> deleteKVValue(String key, String token,
-      QueryParams queryParams) {
-    return retryTemplate
-        .execute((RetryCallback<Response<Void>, ConsulException>) context -> getRetryConsulClient(context).deleteKVValue(key, token,
-            queryParams));
+  public Response<Void> deleteKVValue(String key, String token, QueryParams queryParams) {
+    return retryTemplate.execute(context -> {
+      Response<Void> result = getRetryConsulClient(context).deleteKVValue(key, token, queryParams);
+      log.info("lansheng228: >>> function deleteKVValue => key: {}  ===  token: {}  ===  queryParams: {}  ===  result: {} <<<", key, token,
+          queryParams, result);
+
+      return result;
+    });
   }
 
   @Override
   public Response<Void> deleteKVValues(String key) {
-    return retryTemplate
-        .execute((RetryCallback<Response<Void>, ConsulException>) context -> getRetryConsulClient(context).deleteKVValues(key));
+    return retryTemplate.execute(context -> {
+      Response<Void> result = getRetryConsulClient(context).deleteKVValues(key);
+      log.info("lansheng228: >>> function deleteKVValues => key: {}  ===  result: {} <<<", key, result);
+
+      return result;
+    });
   }
 
   @Override
   public Response<Void> deleteKVValues(String key, String token) {
-    return retryTemplate
-        .execute((RetryCallback<Response<Void>, ConsulException>) context -> getRetryConsulClient(context).deleteKVValues(key, token));
+    return retryTemplate.execute(context -> {
+      Response<Void> result = getRetryConsulClient(context).deleteKVValues(key, token);
+      log.info("lansheng228: >>> function deleteKVValues => key: {}  ===  token: {}  ===  result: {} <<<", key, token, result);
+
+      return result;
+    });
   }
 
   @Override
   public Response<Void> deleteKVValues(String key, QueryParams queryParams) {
-    return retryTemplate
-        .execute((RetryCallback<Response<Void>, ConsulException>) context -> getRetryConsulClient(context).deleteKVValues(key,
-            queryParams));
+    return retryTemplate.execute(context -> {
+      Response<Void> result = getRetryConsulClient(context).deleteKVValues(key, queryParams);
+      log.info("lansheng228: >>> function deleteKVValues => key: {}  ===  queryParams: {}  ===  result: {} <<<", key, queryParams, result);
+
+      return result;
+    });
   }
 
   @Override
-  public Response<Void> deleteKVValues(String key, String token,
-      QueryParams queryParams) {
-    return retryTemplate
-        .execute((RetryCallback<Response<Void>, ConsulException>) context -> getRetryConsulClient(context).deleteKVValues(key, token,
-            queryParams));
+  public Response<Void> deleteKVValues(String key, String token, QueryParams queryParams) {
+    return retryTemplate.execute(context -> {
+      Response<Void> result = getRetryConsulClient(context).deleteKVValues(key, token, queryParams);
+      log.info("lansheng228: >>> function deleteKVValues => key: {}  ===  token: {}  ===  queryParams: {}  ===  result: {} <<<", key, token,
+          queryParams, result);
+
+      return result;
+    });
   }
 
   @Override
-  public Response<List<Check>> getHealthChecksForNode(String nodeName,
-      QueryParams queryParams) {
-    return retryTemplate
-        .execute((RetryCallback<Response<List<Check>>, ConsulException>) context -> getRetryConsulClient(context)
-            .getHealthChecksForNode(nodeName, queryParams));
+  public Response<List<Check>> getHealthChecksForNode(String nodeName, QueryParams queryParams) {
+    return retryTemplate.execute(context -> {
+      Response<List<Check>> checkList = getRetryConsulClient(context).getHealthChecksForNode(nodeName, queryParams);
+      log.info("lansheng228: >>> function getHealthChecksForNode => nodeName: {}  ===  queryParams: {}  ===  checkList: {} <<<", nodeName,
+          queryParams, checkList);
+
+      return checkList;
+    });
   }
 
   @Override
-  public Response<List<Check>> getHealthChecksForService(String serviceName,
-      QueryParams queryParams) {
-    return retryTemplate
-        .execute((RetryCallback<Response<List<Check>>, ConsulException>) context -> getRetryConsulClient(context)
-            .getHealthChecksForService(serviceName, queryParams));
+  public Response<List<Check>> getHealthChecksForService(String serviceName, QueryParams queryParams) {
+    return retryTemplate.execute(context -> {
+      Response<List<Check>> checkList = getRetryConsulClient(context).getHealthChecksForService(serviceName, queryParams);
+      log.info("lansheng228: >>> function getHealthChecksForService => serviceName: {}  ===  queryParams: {}  ===  checkList: {} <<<", serviceName,
+          queryParams, checkList);
+
+      return checkList;
+    });
   }
 
   @Override
   public Response<List<HealthService>> getHealthServices(String serviceName,
       boolean onlyPassing, QueryParams queryParams) {
-    return retryTemplate.execute(
-        (RetryCallback<Response<List<HealthService>>, ConsulException>) context -> getRetryConsulClient(context)
-            .getHealthServices(serviceName, onlyPassing, queryParams));
+    return retryTemplate.execute(context -> {
+      Response<List<HealthService>> healthServiceList = getRetryConsulClient(context)
+          .getHealthServices(serviceName, onlyPassing, queryParams);
+      log.info(
+          "lansheng228: >>> function getHealthServices => serviceName: {}  ===  onlyPassing: {}  ===  queryParams: {}  ===  healthServiceList: {} <<<",
+          serviceName, onlyPassing, queryParams, healthServiceList);
+
+      return healthServiceList;
+    });
   }
 
   @Override
   public Response<List<HealthService>> getHealthServices(String serviceName, String tag,
       boolean onlyPassing, QueryParams queryParams) {
-    return retryTemplate.execute(
-        (RetryCallback<Response<List<HealthService>>, ConsulException>) context -> getRetryConsulClient(context).getHealthServices(
-            serviceName, tag, onlyPassing, queryParams));
+    return retryTemplate.execute(context -> {
+      Response<List<HealthService>> healthServiceList = getRetryConsulClient(context).getHealthServices(
+          serviceName, tag, onlyPassing, queryParams);
+      log.info(
+          "lansheng228: >>> function getHealthServices => serviceName: {}  ===  tag: {}  ===  onlyPassing: {}  ===  queryParams: {}  ===  healthServiceList: {} <<<",
+          serviceName, tag, onlyPassing, queryParams, healthServiceList);
+
+      return healthServiceList;
+    });
   }
 
   @Override
   public Response<List<HealthService>> getHealthServices(String serviceName,
       boolean onlyPassing, QueryParams queryParams, String token) {
-    return retryTemplate.execute(
-        (RetryCallback<Response<List<HealthService>>, ConsulException>) context -> getRetryConsulClient(context).getHealthServices(
-            serviceName, onlyPassing, queryParams, token));
+    return retryTemplate.execute(context -> {
+      Response<List<HealthService>> healthServiceList = getRetryConsulClient(context).getHealthServices(
+          serviceName, onlyPassing, queryParams, token);
+      log.info(
+          "lansheng228: >>> function getHealthServices => serviceName: {}  ===  onlyPassing: {}  ===  queryParams: {}  ===  token: {}  ===  healthServiceList: {} <<<",
+          serviceName, onlyPassing, queryParams, token, healthServiceList);
+
+      return healthServiceList;
+    });
   }
 
   @Override
   public Response<List<HealthService>> getHealthServices(String serviceName, String tag,
       boolean onlyPassing, QueryParams queryParams, String token) {
-    return retryTemplate.execute(
-        (RetryCallback<Response<List<HealthService>>, ConsulException>) context -> getRetryConsulClient(context).getHealthServices(
-            serviceName, tag, onlyPassing, queryParams, token));
+    return retryTemplate.execute(context -> {
+      Response<List<HealthService>> healthServiceList = getRetryConsulClient(context).getHealthServices(
+          serviceName, tag, onlyPassing, queryParams, token);
+      log.info(
+          "lansheng228: >>> function getHealthServices => serviceName: {}  ===  tag: {}  ===  onlyPassing: {}  ===  queryParams: {}  ===  token: {}  ===  healthServiceList: {} <<<",
+          serviceName, tag, onlyPassing, queryParams, token, healthServiceList);
+
+      return healthServiceList;
+    });
   }
 
   @Override
   public Response<List<Check>> getHealthChecksState(QueryParams queryParams) {
-    return retryTemplate
-        .execute((RetryCallback<Response<List<Check>>, ConsulException>) context -> getRetryConsulClient(context)
-            .getHealthChecksState(queryParams));
+    return retryTemplate.execute(context -> {
+      Response<List<Check>> checkList = getRetryConsulClient(context).getHealthChecksState(queryParams);
+      log.info(
+          "lansheng228: >>> function getHealthChecksState =>  queryParams: {}  ===  checkList: {} <<<",
+          queryParams, checkList);
+
+      return checkList;
+    });
   }
 
   @Override
-  public Response<List<Check>> getHealthChecksState(CheckStatus checkStatus,
-      QueryParams queryParams) {
-    return retryTemplate
-        .execute((RetryCallback<Response<List<Check>>, ConsulException>) context -> getRetryConsulClient(context)
-            .getHealthChecksState(checkStatus, queryParams));
+  public Response<List<Check>> getHealthChecksState(CheckStatus checkStatus, QueryParams queryParams) {
+    return retryTemplate.execute(context -> {
+      Response<List<Check>> checkList = getRetryConsulClient(context).getHealthChecksState(checkStatus, queryParams);
+      log.info(
+          "lansheng228: >>> function getHealthChecksState =>  checkStatus: {}  ===  queryParams: {}  ===  checkList: {} <<<",
+          checkStatus, queryParams, checkList);
+
+      return checkList;
+    });
   }
 
   @Override
-  public Response<Event> eventFire(String event, String payload,
-      EventParams eventParams, QueryParams queryParams) {
-    return retryTemplate
-        .execute((RetryCallback<Response<Event>, ConsulException>) context -> getRetryConsulClient(context).eventFire(event, payload,
-            eventParams, queryParams));
+  public Response<Event> eventFire(String event, String payload, EventParams eventParams, QueryParams queryParams) {
+    return retryTemplate.execute(context -> {
+      Response<Event> eventFire = getRetryConsulClient(context).eventFire(event, payload, eventParams, queryParams);
+      log.info(
+          "lansheng228: >>> function eventFire =>  event: {}  ===  payload: {}  ===  eventParams: {} ===  queryParams: {}  ===  eventFire: {} <<<",
+          event, payload, eventParams, queryParams, eventFire);
+
+      return eventFire;
+    });
   }
 
   @Override
   public Response<List<Event>> eventList(QueryParams queryParams) {
-    return retryTemplate
-        .execute((RetryCallback<Response<List<Event>>, ConsulException>) context -> getRetryConsulClient(context).eventList(queryParams));
+    return retryTemplate.execute(context -> {
+      Response<List<Event>> eventList = getRetryConsulClient(context).eventList(queryParams);
+      log.info(
+          "lansheng228: >>> function eventList =>  queryParams: {}  ===  eventList: {} <<<",
+          queryParams, eventList);
+
+      return eventList;
+    });
   }
 
   @Override
   public Response<List<Event>> eventList(String event, QueryParams queryParams) {
-    return retryTemplate
-        .execute((RetryCallback<Response<List<Event>>, ConsulException>) context -> getRetryConsulClient(context).eventList(event,
-            queryParams));
+    return retryTemplate.execute(context -> {
+      Response<List<Event>> eventList = getRetryConsulClient(context).eventList(event, queryParams);
+      log.info(
+          "lansheng228: >>> function eventList =>  event: {}  ===  queryParams: {}  ===  eventList: {} <<<",
+          event, queryParams, eventList);
+
+      return eventList;
+    });
   }
 
   @Override
   public Response<List<Datacenter>> getDatacenters() {
-    return retryTemplate.execute(
-        (RetryCallback<Response<List<Datacenter>>, ConsulException>) context -> getRetryConsulClient(context).getDatacenters());
+    return retryTemplate.execute(context -> {
+      Response<List<Datacenter>> datacenterList = getRetryConsulClient(context).getDatacenters();
+      log.info(
+          "lansheng228: >>> function getDatacenters =>  datacenterList: {} <<<",
+          datacenterList);
+
+      return datacenterList;
+    });
   }
 
   @Override
   public Response<List<Node>> getNodes(QueryParams queryParams) {
-    return retryTemplate
-        .execute((RetryCallback<Response<List<Node>>, ConsulException>) context -> getRetryConsulClient(context).getNodes(queryParams));
+    return retryTemplate.execute(context -> {
+      Response<List<Node>> nodeList = getRetryConsulClient(context).getNodes(queryParams);
+      log.info(
+          "lansheng228: >>> function getNodes =>  queryParams: {}  === nodeList: {} <<<",
+          queryParams, nodeList);
+
+      return nodeList;
+    });
   }
 
   @Override
   public Response<Void> catalogRegister(CatalogRegistration catalogRegistration) {
-    return retryTemplate
-        .execute((RetryCallback<Response<Void>, ConsulException>) context -> getRetryConsulClient(context)
-            .catalogRegister(catalogRegistration));
+    return retryTemplate.execute(context -> {
+      Response<Void> result = getRetryConsulClient(context).catalogRegister(catalogRegistration);
+      log.info(
+          "lansheng228: >>> function catalogRegister =>  catalogRegistration: {}  === result: {} <<<",
+          catalogRegistration, result);
+
+      return result;
+    });
   }
 
   @Override
-  public Response<Void> catalogRegister(CatalogRegistration catalogRegistration,
-      String token) {
-    return retryTemplate
-        .execute((RetryCallback<Response<Void>, ConsulException>) context -> getRetryConsulClient(context)
-            .catalogRegister(catalogRegistration, token));
+  public Response<Void> catalogRegister(CatalogRegistration catalogRegistration, String token) {
+    return retryTemplate.execute(context -> {
+      Response<Void> result = getRetryConsulClient(context).catalogRegister(catalogRegistration, token);
+      log.info(
+          "lansheng228: >>> function catalogRegister =>  catalogRegistration: {}  === token: {}  === result: {} <<<",
+          catalogRegistration, token, result);
+
+      return result;
+    });
   }
 
   @Override
   public Response<Void> catalogDeregister(CatalogDeregistration catalogDeregistration) {
-    return retryTemplate
-        .execute((RetryCallback<Response<Void>, ConsulException>) context -> getRetryConsulClient(context)
-            .catalogDeregister(catalogDeregistration));
+    return retryTemplate.execute(context -> {
+      Response<Void> result = getRetryConsulClient(context).catalogDeregister(catalogDeregistration);
+      log.info(
+          "lansheng228: >>> function catalogDeregister =>  catalogDeregistration: {}  === result: {} <<<",
+          catalogDeregistration, result);
+
+      return result;
+    });
   }
 
   @Override
   public Response<List<String>> getCatalogDatacenters() {
-    return retryTemplate
-        .execute((RetryCallback<Response<List<String>>, ConsulException>) context -> getRetryConsulClient(context).getCatalogDatacenters());
+    return retryTemplate.execute(context -> {
+      Response<List<String>> catalogDatacenterList = getRetryConsulClient(context).getCatalogDatacenters();
+      log.info(
+          "lansheng228: >>> function getCatalogDatacenters =>  catalogDatacenterList: {} <<<",
+          catalogDatacenterList);
+
+      return catalogDatacenterList;
+    });
   }
 
   @Override
-  public Response<List<com.ecwid.consul.v1.catalog.model.Node>> getCatalogNodes(
-      QueryParams queryParams) {
-    return retryTemplate.execute(
-        (RetryCallback<Response<List<com.ecwid.consul.v1.catalog.model.Node>>, ConsulException>) context -> getRetryConsulClient(context)
-            .getCatalogNodes(queryParams));
+  public Response<List<com.ecwid.consul.v1.catalog.model.Node>> getCatalogNodes(QueryParams queryParams) {
+    return retryTemplate.execute(context -> {
+      Response<List<com.ecwid.consul.v1.catalog.model.Node>> catalogNodeList = getRetryConsulClient(context)
+          .getCatalogNodes(queryParams);
+      log.info(
+          "lansheng228: >>> function getCatalogNodes =>  queryParams: {}  ===  catalogNodeList: {} <<<",
+          queryParams, catalogNodeList);
+
+      return catalogNodeList;
+    });
   }
 
   @Override
-  public Response<Map<String, List<String>>> getCatalogServices(
-      QueryParams queryParams) {
-    return retryTemplate.execute(
-        (RetryCallback<Response<Map<String, List<String>>>, ConsulException>) context -> getRetryConsulClient(context)
-            .getCatalogServices(queryParams));
+  public Response<Map<String, List<String>>> getCatalogServices(QueryParams queryParams) {
+    return retryTemplate.execute(context -> {
+      Response<Map<String, List<String>>> catalogServiceMap = getRetryConsulClient(context)
+          .getCatalogServices(queryParams);
+      log.info(
+          "lansheng228: >>> function getCatalogServices =>  queryParams: {}  ===  catalogServiceMap: {} <<<",
+          queryParams, catalogServiceMap);
+
+      return catalogServiceMap;
+    });
   }
 
   @Override
-  public Response<Map<String, List<String>>> getCatalogServices(QueryParams queryParams,
-      String token) {
-    return retryTemplate.execute(
-        (RetryCallback<Response<Map<String, List<String>>>, ConsulException>) context -> getRetryConsulClient(context)
-            .getCatalogServices(queryParams, token));
+  public Response<Map<String, List<String>>> getCatalogServices(QueryParams queryParams, String token) {
+    return retryTemplate.execute(context -> {
+      Response<Map<String, List<String>>> catalogServiceMap = getRetryConsulClient(context)
+          .getCatalogServices(queryParams, token);
+      log.info(
+          "lansheng228: >>> function getCatalogServices =>  queryParams: {}  ===  token: {}  ===  catalogServiceMap: {} <<<",
+          queryParams, token, catalogServiceMap);
+
+      return catalogServiceMap;
+    });
   }
 
   @Override
-  public Response<List<CatalogService>> getCatalogService(String serviceName,
-      QueryParams queryParams) {
-    return retryTemplate.execute(
-        (RetryCallback<Response<List<CatalogService>>, ConsulException>) context -> getRetryConsulClient(context)
-            .getCatalogService(serviceName, queryParams));
+  public Response<List<CatalogService>> getCatalogService(String serviceName, QueryParams queryParams) {
+    return retryTemplate.execute(context -> {
+      Response<List<CatalogService>> catalogServiceList = getRetryConsulClient(context)
+          .getCatalogService(serviceName, queryParams);
+      log.info(
+          "lansheng228: >>> function getCatalogService =>  serviceName: {}  ===  queryParams: {}  ===  catalogServiceList: {} <<<",
+          serviceName, queryParams, catalogServiceList);
+
+      return catalogServiceList;
+    });
   }
 
   @Override
   public Response<List<CatalogService>> getCatalogService(String serviceName,
       String tag, QueryParams queryParams) {
-    return retryTemplate.execute(
-        (RetryCallback<Response<List<CatalogService>>, ConsulException>) context -> getRetryConsulClient(context)
-            .getCatalogService(serviceName, tag, queryParams));
+    return retryTemplate.execute(context -> {
+      Response<List<CatalogService>> catalogServiceList = getRetryConsulClient(context)
+          .getCatalogService(serviceName, tag, queryParams);
+      log.info(
+          "lansheng228: >>> function getCatalogService =>  serviceName: {}  ===  tag: {}  ===  queryParams: {}  ===  catalogServiceList: {} <<<",
+          serviceName, tag, queryParams, catalogServiceList);
+
+      return catalogServiceList;
+    });
   }
 
   @Override
   public Response<List<CatalogService>> getCatalogService(String serviceName,
       QueryParams queryParams, String token) {
-    return retryTemplate.execute(
-        (RetryCallback<Response<List<CatalogService>>, ConsulException>) context -> getRetryConsulClient(context)
-            .getCatalogService(serviceName, queryParams, token));
+    return retryTemplate.execute(context -> {
+      Response<List<CatalogService>> catalogServiceList = getRetryConsulClient(context)
+          .getCatalogService(serviceName, queryParams, token);
+      log.info(
+          "lansheng228: >>> function getCatalogService =>  serviceName: {}  ===  queryParams: {}  ===  token: {}  ===  catalogServiceList: {} <<<",
+          serviceName, queryParams, token, catalogServiceList);
+
+      return catalogServiceList;
+    });
   }
 
   @Override
   public Response<List<CatalogService>> getCatalogService(String serviceName,
       String tag, QueryParams queryParams, String token) {
-    return retryTemplate.execute(
-        (RetryCallback<Response<List<CatalogService>>, ConsulException>) context -> getRetryConsulClient(context)
-            .getCatalogService(serviceName, tag, queryParams, token));
+    return retryTemplate.execute(context -> {
+      Response<List<CatalogService>> catalogServiceList = getRetryConsulClient(context)
+          .getCatalogService(serviceName, tag, queryParams, token);
+      log.info(
+          "lansheng228: >>> function getCatalogService =>  serviceName: {}  ===  tag: {} ===  queryParams: {}  ===  token: {}  ===  catalogServiceList: {} <<<",
+          serviceName, tag, queryParams, token, catalogServiceList);
+
+      return catalogServiceList;
+    });
   }
 
   @Override
-  public Response<CatalogNode> getCatalogNode(String nodeName,
-      QueryParams queryParams) {
-    return retryTemplate
-        .execute((RetryCallback<Response<CatalogNode>, ConsulException>) context -> getRetryConsulClient(context).getCatalogNode(nodeName,
-            queryParams));
+  public Response<CatalogNode> getCatalogNode(String nodeName, QueryParams queryParams) {
+    return retryTemplate.execute(context -> {
+      Response<CatalogNode> catalogNode = getRetryConsulClient(context).getCatalogNode(nodeName, queryParams);
+      log.info(
+          "lansheng228: >>> function getCatalogNode =>  nodeName: {}  ===  queryParams: {}  ===  catalogNode: {} <<<",
+          nodeName, queryParams, catalogNode);
+
+      return catalogNode;
+    });
   }
 
   @Override
   public Response<Map<String, com.ecwid.consul.v1.agent.model.Check>> getAgentChecks() {
-    return retryTemplate.execute(
-        (RetryCallback<Response<Map<String, com.ecwid.consul.v1.agent.model.Check>>, ConsulException>) context -> getRetryConsulClient(context)
-            .getAgentChecks());
+    return retryTemplate.execute(context -> {
+      Response<Map<String, com.ecwid.consul.v1.agent.model.Check>> checkList = getRetryConsulClient(context)
+          .getAgentChecks();
+      log.info(
+          "lansheng228: >>> function getAgentChecks =>  checkList: {} <<<", checkList);
+
+      return checkList;
+    });
   }
 
   @Override
   public Response<Map<String, Service>> getAgentServices() {
-    return retryTemplate.execute(
-        (RetryCallback<Response<Map<String, Service>>, ConsulException>) context -> getRetryConsulClient(context).getAgentServices());
+    return retryTemplate.execute(context -> {
+      Response<Map<String, Service>> agentServiceMap = getRetryConsulClient(context).getAgentServices();
+      log.info(
+          "lansheng228: >>> function getAgentServices =>  agentServiceMap: {} <<<", agentServiceMap);
+
+      return agentServiceMap;
+    });
   }
 
   @Override
   public Response<List<Member>> getAgentMembers() {
-    return retryTemplate
-        .execute((RetryCallback<Response<List<Member>>, ConsulException>) context -> getRetryConsulClient(context).getAgentMembers());
+    return retryTemplate.execute(context -> {
+      Response<List<Member>> agentMemberList = getRetryConsulClient(context).getAgentMembers();
+      log.info(
+          "lansheng228: >>> function getAgentMembers =>  agentMemberList: {} <<<", agentMemberList);
+
+      return agentMemberList;
+    });
   }
 
   @Override
   public Response<Self> getAgentSelf() {
-    return retryTemplate
-        .execute((RetryCallback<Response<Self>, ConsulException>) context -> getRetryConsulClient(context).getAgentSelf());
+    return retryTemplate.execute(context -> {
+      Response<Self> agentSelf = getRetryConsulClient(context).getAgentSelf();
+      log.info(
+          "lansheng228: >>> function getAgentSelf =>  agentSelf: {} <<<", agentSelf);
+
+      return agentSelf;
+    });
   }
 
   @Override
   public Response<Self> getAgentSelf(String token) {
-    return retryTemplate
-        .execute((RetryCallback<Response<Self>, ConsulException>) context -> getRetryConsulClient(context).getAgentSelf(token));
+    return retryTemplate.execute(context -> {
+      Response<Self> agentSelf = getRetryConsulClient(context).getAgentSelf(token);
+      log.info(
+          "lansheng228: >>> function getAgentSelf =>  token: {}  ===  agentSelf: {} <<<", token, agentSelf);
+
+      return agentSelf;
+    });
   }
 
   @Override
   public Response<Void> agentSetMaintenance(boolean maintenanceEnabled) {
-    return retryTemplate
-        .execute((RetryCallback<Response<Void>, ConsulException>) context -> getRetryConsulClient(context)
-            .agentSetMaintenance(maintenanceEnabled));
+    return retryTemplate.execute(context -> {
+      Response<Void> result = getRetryConsulClient(context).agentSetMaintenance(maintenanceEnabled);
+      log.info(
+          "lansheng228: >>> function agentSetMaintenance =>  maintenanceEnabled: {}  ===  result: {} <<<", maintenanceEnabled, result);
+
+      return result;
+    });
   }
 
   @Override
   public Response<Void> agentSetMaintenance(boolean maintenanceEnabled, String reason) {
-    return retryTemplate
-        .execute((RetryCallback<Response<Void>, ConsulException>) context -> getRetryConsulClient(context)
-            .agentSetMaintenance(maintenanceEnabled, reason));
+    return retryTemplate.execute(context -> {
+      Response<Void> result = getRetryConsulClient(context).agentSetMaintenance(maintenanceEnabled, reason);
+      log.info(
+          "lansheng228: >>> function agentSetMaintenance =>  maintenanceEnabled: {}  ===  reason: {}  ===  result: {} <<<",
+          maintenanceEnabled, reason, result);
+
+      return result;
+    });
   }
 
   @Override
   public Response<Void> agentJoin(String address, boolean wan) {
-    return retryTemplate
-        .execute((RetryCallback<Response<Void>, ConsulException>) context -> getRetryConsulClient(context).agentJoin(address, wan));
+    return retryTemplate.execute(context -> {
+      Response<Void> result = getRetryConsulClient(context).agentJoin(address, wan);
+      log.info(
+          "lansheng228: >>> function agentJoin =>  address: {}  ===  wan: {}  ===  result: {} <<<",
+          address, wan, result);
+
+      return result;
+    });
   }
 
   @Override
   public Response<Void> agentForceLeave(String node) {
-    return retryTemplate
-        .execute((RetryCallback<Response<Void>, ConsulException>) context -> getRetryConsulClient(context).agentForceLeave(node));
+    return retryTemplate.execute(context -> {
+      Response<Void> result = getRetryConsulClient(context).agentForceLeave(node);
+      log.info(
+          "lansheng228: >>> function agentForceLeave => node: {}  ===  result: {} <<<",
+          node, result);
+
+      return result;
+    });
   }
 
   @Override
   public Response<Void> agentCheckRegister(NewCheck newCheck) {
-    return retryTemplate
-        .execute((RetryCallback<Response<Void>, ConsulException>) context -> getRetryConsulClient(context).agentCheckRegister(newCheck));
+    return retryTemplate.execute(context -> {
+      Response<Void> result = getRetryConsulClient(context).agentCheckRegister(newCheck);
+      log.info(
+          "lansheng228: >>> function agentForceLeave => newCheck: {}  ===  result: {} <<<",
+          newCheck, result);
+
+      return result;
+    });
   }
 
   @Override
   public Response<Void> agentCheckRegister(NewCheck newCheck, String token) {
-    return retryTemplate
-        .execute((RetryCallback<Response<Void>, ConsulException>) context -> getRetryConsulClient(context).agentCheckRegister(newCheck,
-            token));
+    return retryTemplate.execute(context -> {
+      Response<Void> result = getRetryConsulClient(context).agentCheckRegister(newCheck, token);
+      log.info(
+          "lansheng228: >>> function agentCheckRegister => newCheck: {}  ===  token: {}  ===  result: {} <<<",
+          newCheck, token, result);
+
+      return result;
+    });
   }
 
   @Override
   public Response<Void> agentCheckDeregister(String checkId) {
-    return retryTemplate
-        .execute((RetryCallback<Response<Void>, ConsulException>) context -> getRetryConsulClient(context)
-            .agentCheckDeregister(checkId));
+    return retryTemplate.execute(context -> {
+      Response<Void> result = getRetryConsulClient(context).agentCheckDeregister(checkId);
+      log.info(
+          "lansheng228: >>> function agentCheckDeregister => checkId: {}  ===  result: {} <<<",
+          checkId, result);
+
+      return result;
+    });
   }
 
   @Override
   public Response<Void> agentCheckDeregister(String checkId, String token) {
-    return retryTemplate
-        .execute((RetryCallback<Response<Void>, ConsulException>) context -> getRetryConsulClient(context).agentCheckDeregister(checkId,
-            token));
+    return retryTemplate.execute(context -> {
+      Response<Void> result = getRetryConsulClient(context).agentCheckDeregister(checkId, token);
+      log.info(
+          "lansheng228: >>> function agentCheckDeregister => checkId: {}  ===  token: {}  ===  result: {} <<<",
+          checkId, token, result);
+
+      return result;
+    });
   }
 
   /**
@@ -896,7 +1312,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
       try {
         response = consulClient.getClient().agentCheckPass(checkId);
       } catch (Exception e) {
-        log.error("lansheng228: >>> " + e.getMessage() + " <<<");
+        log.error("lansheng228: >>> {} <<<", e.getMessage());
       }
     }
     return response;
@@ -914,9 +1330,10 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
       try {
         response = consulClient.getClient().agentCheckPass(checkId, note);
       } catch (Exception e) {
-        log.error("lansheng228: >>> " + e.getMessage() + " <<<");
+        log.error("lansheng228: >>> {} <<<", e.getMessage());
       }
     }
+
     return response;
   }
 
@@ -940,42 +1357,74 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
 
   @Override
   public Response<Void> agentCheckWarn(String checkId) {
-    return retryTemplate
-        .execute((RetryCallback<Response<Void>, ConsulException>) context -> getRetryConsulClient(context).agentCheckWarn(checkId));
+    return retryTemplate.execute(context -> {
+      Response<Void> result = getRetryConsulClient(context).agentCheckWarn(checkId);
+      log.info(
+          "lansheng228: >>> function agentCheckWarn => checkId: {}  ===  result: {} <<<",
+          checkId, result);
+
+      return result;
+    });
   }
 
   @Override
   public Response<Void> agentCheckWarn(String checkId, String note) {
-    return retryTemplate
-        .execute((RetryCallback<Response<Void>, ConsulException>) context -> getRetryConsulClient(context).agentCheckWarn(checkId,
-            note));
+    return retryTemplate.execute(context -> {
+      Response<Void> result = getRetryConsulClient(context).agentCheckWarn(checkId, note);
+      log.info(
+          "lansheng228: >>> function agentCheckWarn => checkId: {}  ===  note: {}  ===  result: {} <<<",
+          checkId, note, result);
+
+      return result;
+    });
   }
 
   @Override
   public Response<Void> agentCheckWarn(String checkId, String note, String token) {
-    return retryTemplate
-        .execute((RetryCallback<Response<Void>, ConsulException>) context -> getRetryConsulClient(context).agentCheckWarn(checkId, note,
-            token));
+    return retryTemplate.execute(context -> {
+      Response<Void> result = getRetryConsulClient(context).agentCheckWarn(checkId, note, token);
+      log.info(
+          "lansheng228: >>> function agentCheckWarn => checkId: {}  ===  note: {}  ===  token: {}  ===  result: {} <<<",
+          checkId, note, token, result);
+
+      return result;
+    });
   }
 
   @Override
   public Response<Void> agentCheckFail(String checkId) {
-    return retryTemplate
-        .execute((RetryCallback<Response<Void>, ConsulException>) context -> getRetryConsulClient(context).agentCheckFail(checkId));
+    return retryTemplate.execute(context -> {
+      Response<Void> result = getRetryConsulClient(context).agentCheckFail(checkId);
+      log.info(
+          "lansheng228: >>> function agentCheckFail => checkId: {}  ===  result: {} <<<",
+          checkId, result);
+
+      return result;
+    });
   }
 
   @Override
   public Response<Void> agentCheckFail(String checkId, String note) {
-    return retryTemplate
-        .execute((RetryCallback<Response<Void>, ConsulException>) context -> getRetryConsulClient(context).agentCheckFail(checkId,
-            note));
+    return retryTemplate.execute(context -> {
+      Response<Void> result = getRetryConsulClient(context).agentCheckFail(checkId, note);
+      log.info(
+          "lansheng228: >>> function agentCheckFail => checkId: {}  ===  note: {}  ===  result: {} <<<",
+          checkId, note, result);
+
+      return result;
+    });
   }
 
   @Override
   public Response<Void> agentCheckFail(String checkId, String note, String token) {
-    return retryTemplate
-        .execute((RetryCallback<Response<Void>, ConsulException>) context -> getRetryConsulClient(context).agentCheckFail(checkId, note,
-            token));
+    return retryTemplate.execute(context -> {
+      Response<Void> result = getRetryConsulClient(context).agentCheckFail(checkId, note, token);
+      log.info(
+          "lansheng228: >>> function agentCheckFail => checkId: {}  ===  note: {}  ===  token: {}  ===  result: {} <<<",
+          checkId, note, token, result);
+
+      return result;
+    });
   }
 
   /**
@@ -985,8 +1434,8 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
    */
   @Override
   public Response<Void> agentServiceRegister(NewService newService) {
-    Assert.state(isAllConsulClientsHealthy(true),
-        "Register service failed: all consul clients must be available!"); // 全部节点都是可用的情况下才能注册
+    Assert.state(isAllConsulClientsHealthy(),
+        "lansheng228: >>> Register service failed: all consul clients must be available!"); // 全部节点都是可用的情况下才能注册
     Response<Void> response = null;
     for (ConsulClientHolder consulClient : consulClients) {
       response = consulClient.getClient().agentServiceRegister(newService);
@@ -1001,8 +1450,8 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
    */
   @Override
   public Response<Void> agentServiceRegister(NewService newService, String token) {
-    Assert.state(isAllConsulClientsHealthy(true),
-        "Register service failed: all consul clients must be available!"); // 全部节点都是可用的情况下才能注册
+    Assert.state(isAllConsulClientsHealthy(),
+        "lansheng228: >>> Register service failed: all consul clients must be available!"); // 全部节点都是可用的情况下才能注册
     Response<Void> response = null;
     for (ConsulClientHolder consulClient : consulClients) {
       response = consulClient.getClient().agentServiceRegister(newService, token);
@@ -1017,8 +1466,8 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
    */
   @Override
   public Response<Void> agentServiceDeregister(String serviceId) {
-    Assert.state(isAllConsulClientsHealthy(true),
-        "Deregister service failed: all consul clients must be available!"); // 全部节点都是可用的情况下才能注册
+    Assert.state(isAllConsulClientsHealthy(),
+        "lansheng228: >>> Deregister service failed: all consul clients must be available!"); // 全部节点都是可用的情况下才能注册
     Response<Void> response = null;
     for (ConsulClientHolder consulClient : consulClients) {
       response = consulClient.getClient().agentServiceDeregister(serviceId);
@@ -1033,8 +1482,8 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
    */
   @Override
   public Response<Void> agentServiceDeregister(String serviceId, String token) {
-    Assert.state(isAllConsulClientsHealthy(true),
-        "Deregister service failed: all consul clients must be available!"); // 全部节点都是可用的情况下才能注册
+    Assert.state(isAllConsulClientsHealthy(),
+        "lansheng228: >>> Deregister service failed: all consul clients must be available!"); // 全部节点都是可用的情况下才能注册
     Response<Void> response = null;
     for (ConsulClientHolder consulClient : consulClients) {
       response = consulClient.getClient().agentServiceDeregister(serviceId, token);
@@ -1050,8 +1499,8 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   @Override
   public Response<Void> agentServiceSetMaintenance(String serviceId,
       boolean maintenanceEnabled) {
-    Assert.state(isAllConsulClientsHealthy(true),
-        "Set service maintenance failed: all consul clients must be available!"); // 全部节点都是可用的情况下才能注册
+    Assert.state(isAllConsulClientsHealthy(),
+        "lansheng228: >>> Set service maintenance failed: all consul clients must be available!"); // 全部节点都是可用的情况下才能注册
     Response<Void> response = null;
     for (ConsulClientHolder consulClient : consulClients) {
       response = consulClient.getClient().agentServiceSetMaintenance(serviceId,
@@ -1068,8 +1517,8 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   @Override
   public Response<Void> agentServiceSetMaintenance(String serviceId,
       boolean maintenanceEnabled, String reason) {
-    Assert.state(isAllConsulClientsHealthy(true),
-        "Set service maintenance failed: all consul clients must be available!"); // 全部节点都是可用的情况下才能注册
+    Assert.state(isAllConsulClientsHealthy(),
+        "lansheng228: >>> Set service maintenance failed: all consul clients must be available!"); // 全部节点都是可用的情况下才能注册
     Response<Void> response = null;
     for (ConsulClientHolder consulClient : consulClients) {
       response = consulClient.getClient().agentServiceSetMaintenance(serviceId,
@@ -1096,37 +1545,74 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
 
   @Override
   public Response<String> aclCreate(NewAcl newAcl, String token) {
-    return retryTemplate
-        .execute((RetryCallback<Response<String>, ConsulException>) context -> getRetryConsulClient(context).aclCreate(newAcl, token));
+    return retryTemplate.execute(context -> {
+      Response<String> acl = getRetryConsulClient(context).aclCreate(newAcl, token);
+      log.info(
+          "lansheng228: >>> function aclCreate => newAcl: {}  ===  token: {}  ===  acl: {} <<<",
+          newAcl, token, acl);
+
+      return acl;
+    });
   }
 
   @Override
   public Response<Void> aclUpdate(UpdateAcl updateAcl, String token) {
-    return retryTemplate
-        .execute((RetryCallback<Response<Void>, ConsulException>) context -> getRetryConsulClient(context).aclUpdate(updateAcl, token));
+    return retryTemplate.execute(context -> {
+      Response<Void> result = getRetryConsulClient(context).aclUpdate(updateAcl, token);
+      log.info(
+          "lansheng228: >>> function aclUpdate => updateAcl: {}  ===  token: {}  ===  result: {} <<<",
+          updateAcl, token, result);
+
+      return result;
+    });
   }
 
   @Override
   public Response<Void> aclDestroy(String aclId, String token) {
-    return retryTemplate
-        .execute((RetryCallback<Response<Void>, ConsulException>) context -> getRetryConsulClient(context).aclDestroy(aclId, token));
+    return retryTemplate.execute(context -> {
+      Response<Void> result = getRetryConsulClient(context).aclDestroy(aclId, token);
+      log.info(
+          "lansheng228: >>> function aclDestroy => aclId: {}  ===  token: {}  ===  result: {} <<<",
+          aclId, token, result);
+
+      return result;
+    });
   }
 
   @Override
   public Response<Acl> getAcl(String id) {
-    return retryTemplate.execute((RetryCallback<Response<Acl>, ConsulException>) context -> getRetryConsulClient(context).getAcl(id));
+    return retryTemplate.execute(context -> {
+      Response<Acl> acl = getRetryConsulClient(context).getAcl(id);
+      log.info(
+          "lansheng228: >>> function getAcl => id: {}  ===  acl: {} <<<",
+          id, acl);
+
+      return acl;
+    });
   }
 
   @Override
   public Response<String> aclClone(String aclId, String token) {
-    return retryTemplate
-        .execute((RetryCallback<Response<String>, ConsulException>) context -> getRetryConsulClient(context).aclClone(aclId, token));
+    return retryTemplate.execute(context -> {
+      Response<String> aclClone = getRetryConsulClient(context).aclClone(aclId, token);
+      log.info(
+          "lansheng228: >>> function aclClone => aclId: {}  ===  token: {}  ===  aclClone: {} <<<",
+          aclId, token, aclClone);
+
+      return aclClone;
+    });
   }
 
   @Override
   public Response<List<Acl>> getAclList(String token) {
-    return retryTemplate
-        .execute((RetryCallback<Response<List<Acl>>, ConsulException>) context -> getRetryConsulClient(context).getAclList(token));
+    return retryTemplate.execute(context -> {
+      Response<List<Acl>> aclList = getRetryConsulClient(context).getAclList(token);
+      log.info(
+          "lansheng228: >>> function getAclList => token: {}  ===  aclList: {} <<<",
+          token, aclList);
+
+      return aclList;
+    });
   }
 
   /**
@@ -1181,6 +1667,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
         retryableExceptions, true);
     tmpRetryTemplate.setRetryPolicy(retryPolicy);
     tmpRetryTemplate.setListeners(new RetryListener[]{this});
+
     return tmpRetryTemplate;
   }
 
@@ -1202,8 +1689,12 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
    * 根据已生成的集群列表(不管节点健康状况)初始化主要ConsulClient
    */
   protected ConsulClientHolder initPrimaryClient() {
-    return ConsulClientUtil.chooseClient(this.clusterConsulProperties.getClusterClientKey(),
-        this.consulClients);
+    String key = this.clusterConsulProperties.getClusterClientKey();
+    List<ConsulClientHolder> clients = this.consulClients;
+    ConsulClientHolder chooseClient = ConsulClientUtil.chooseClient(key, clients);
+    log.info("lansheng228: >>>  Hash Key: {}  ==== Hash List: {}  ====  Hash Result: {} <<<", key, clients, chooseClient);
+
+    return chooseClient;
   }
 
   /**
@@ -1299,7 +1790,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
    * 对全部的ConsulClient检测一次健康状况
    */
   protected void checkConsulClientsHealth() {
-    boolean allHealthy = isAllConsulClientsHealthy(true);
+    boolean allHealthy = isAllConsulClientsHealthy();
     if (allHealthy && (this.currentClient != this.primaryClient)) { // 如果所有节点都是健康的，那么恢复currentClient为primaryClient
       this.currentClient = this.primaryClient;
       log.info("lansheng228: >>> The primaryClient is recovered when all consul clients is healthy. <<<");
@@ -1308,15 +1799,11 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
 
   /**
    * 判断全部的ConsulClient是否都是健康的?
-   *
-   * @param immediate - 是否立即执行一次检测
    */
-  protected boolean isAllConsulClientsHealthy(boolean immediate) {
+  protected boolean isAllConsulClientsHealthy() {
     boolean allHealthy = true;
     for (ConsulClientHolder consulClient : this.consulClients) {
-      if (immediate) {
-        consulClient.checkHealth();
-      }
+      consulClient.checkHealth();
       allHealthy = allHealthy && consulClient.isHealthy();
       consulClient.setPrimary(consulClient == this.primaryClient);
     }
