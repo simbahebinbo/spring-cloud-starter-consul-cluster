@@ -10,6 +10,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
@@ -162,6 +163,9 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   @Setter
   private volatile ConsulClientHolder currentClient;
 
+
+  private Map<ConsulClientHolder, Boolean> consulClientHealthMap;
+
   /**
    * 集群节点在出错时切换的锁
    */
@@ -196,6 +200,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     }
     this.primaryClient = tmpPrimaryClient;
     this.currentClient = tmpPrimaryClient;
+    this.consulClientHealthMap = new HashMap<>();
     this.scheduleConsulClientsHealthCheck();
   }
 
@@ -1349,7 +1354,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
       try {
         response = consulClient.getClient().agentCheckPass(checkId, note, token);
       } catch (Exception e) {
-        log.error("lansheng228: >>> " + e.getMessage() + " <<<");
+        log.error("lansheng228: >>> {} <<<", e.getMessage());
       }
     }
     return response;
@@ -1428,128 +1433,158 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   }
 
   /**
-   * 检测所有节点是否可用，如果都可用，则向所有节点注册服务
+   * 则向可用节点注册服务
    *
    * see ConsulServiceRegistry.register(...)
    */
   @Override
   public Response<Void> agentServiceRegister(NewService newService) {
-//    Assert.state(isAllConsulClientsHealthy(),
-//        "lansheng228: >>> Register service failed: all consul clients must be available!"); // 全部节点都是可用的情况下才能注册
-//    log.info(
-//        "lansheng228: >>> function agentServiceRegister => newService: {}  <<<",
-//        newService);
 //    Response<Void> response = null;
 //    for (ConsulClientHolder consulClient : consulClients) {
-//      response = consulClient.getClient().agentServiceRegister(newService);
+//      if (consulClient.isHealthy()) {
+//        response = consulClient.getClient().agentServiceRegister(newService);
+//      }
 //    }
+//    log.info(
+//        "lansheng228: >>> function agentServiceRegister => newService: {}  ===  response: {} <<<",
+//        newService, response);
+//
+//    return response;
 
     return retryTemplate.execute(context -> {
-      Response<Void> result = getRetryConsulClient(context).agentServiceRegister(newService);
+      Response<Void> result = null;
+      for (ConsulClientHolder consulClient : consulClients) {
+        if (consulClient.isHealthy()) {
+          result = consulClient.getClient().agentServiceRegister(newService);
+        }
+      }
       log.info(
-          "lansheng228: >>> function agentServiceRegister => newService: {}  <<<",
-          newService);
+          "lansheng228: >>> function agentServiceRegister => newService: {}  ===  result: {}  <<<",
+          newService, result);
 
       return result;
     });
-
-//    return response;
   }
 
   /**
-   * 检测所有节点是否可用，如果都可用，则向所有节点注册服务
+   * 则向可用节点注册服务
    *
    * see ConsulServiceRegistry.register(...)
    */
   @Override
   public Response<Void> agentServiceRegister(NewService newService, String token) {
-//    Assert.state(isAllConsulClientsHealthy(),
-//        "lansheng228: >>> Register service failed: all consul clients must be available!"); // 全部节点都是可用的情况下才能注册
-//    log.info(
-//        "lansheng228: >>> function agentServiceRegister => newService: {}  ===  token: {} <<<",
-//        newService, token);
 //    Response<Void> response = null;
 //    for (ConsulClientHolder consulClient : consulClients) {
-//      response = consulClient.getClient().agentServiceRegister(newService, token);
+//      if (consulClient.isHealthy()) {
+//        response = consulClient.getClient().agentServiceRegister(newService, token);
+//      }
 //    }
+//
+//    log.info(
+//        "lansheng228: >>> function agentServiceRegister => newService: {}  ===  token: {} ===  response: {} <<<",
+//        newService, token, response);
+//
+//    return response;
 
     return retryTemplate.execute(context -> {
-      Response<Void> result = getRetryConsulClient(context).agentServiceRegister(newService, token);
+      Response<Void> result = null;
+      for (ConsulClientHolder consulClient : consulClients) {
+        if (consulClient.isHealthy()) {
+          result = consulClient.getClient().agentServiceRegister(newService, token);
+        }
+      }
       log.info(
-          "lansheng228: >>> function agentServiceRegister => newService: {}  ===  token: {} <<<",
-          newService, token);
+          "lansheng228: >>> function agentServiceRegister => newService: {}  ===  token: {} ===  response: {} <<<",
+          newService, token, result);
 
       return result;
     });
-
-//    return response;
   }
 
   /**
-   * 检测所有节点是否可用，如果都可用，则向所有节点注销服务
+   * 则向可用节点注销服务
    *
    * see ConsulServiceRegistry.deregister(...)
    */
   @Override
   public Response<Void> agentServiceDeregister(String serviceId) {
-    Assert.state(isAllConsulClientsHealthy(),
-        "lansheng228: >>> Deregister service failed: all consul clients must be available!"); // 全部节点都是可用的情况下才能注册
     Response<Void> response = null;
     for (ConsulClientHolder consulClient : consulClients) {
-      response = consulClient.getClient().agentServiceDeregister(serviceId);
+      if (consulClient.isHealthy()) {
+        response = consulClient.getClient().agentServiceDeregister(serviceId);
+      }
     }
+
+    log.info(
+        "lansheng228: >>> function agentServiceDeregister => serviceId: {}   ===  response: {}  <<<",
+        serviceId, response);
+
     return response;
   }
 
   /**
-   * 检测所有节点是否可用，如果都可用，则向所有节点注销服务
+   * 则向可用节点注销服务
    *
    * see ConsulServiceRegistry.deregister(...)
    */
   @Override
   public Response<Void> agentServiceDeregister(String serviceId, String token) {
-    Assert.state(isAllConsulClientsHealthy(),
-        "lansheng228: >>> Deregister service failed: all consul clients must be available!"); // 全部节点都是可用的情况下才能注册
     Response<Void> response = null;
     for (ConsulClientHolder consulClient : consulClients) {
-      response = consulClient.getClient().agentServiceDeregister(serviceId, token);
+      if (consulClient.isHealthy()) {
+        response = consulClient.getClient().agentServiceDeregister(serviceId, token);
+      }
     }
+
+    log.info(
+        "lansheng228: >>> function agentServiceDeregister => serviceId: {}  ===  token: {}  ===  response: {}  <<<",
+        serviceId, token, response);
+
     return response;
   }
 
   /**
-   * 检测所有节点是否可用，如果都可用，则向所有节点执行setMaintenance
+   * 则向可用节点执行setMaintenance
    *
    * see ConsulServiceRegistry.setStatus(...)
    */
   @Override
-  public Response<Void> agentServiceSetMaintenance(String serviceId,
-      boolean maintenanceEnabled) {
-    Assert.state(isAllConsulClientsHealthy(),
-        "lansheng228: >>> Set service maintenance failed: all consul clients must be available!"); // 全部节点都是可用的情况下才能注册
+  public Response<Void> agentServiceSetMaintenance(String serviceId, boolean maintenanceEnabled) {
     Response<Void> response = null;
     for (ConsulClientHolder consulClient : consulClients) {
-      response = consulClient.getClient().agentServiceSetMaintenance(serviceId,
-          maintenanceEnabled);
+      if (consulClient.isHealthy()) {
+        response = consulClient.getClient().agentServiceSetMaintenance(serviceId,
+            maintenanceEnabled);
+      }
     }
+
+    log.info(
+        "lansheng228: >>> function agentServiceSetMaintenance => serviceId: {}  ===  maintenanceEnabled: {}  ===  response: {}  <<<",
+        serviceId, maintenanceEnabled, response);
+
     return response;
   }
 
   /**
-   * 检测所有节点是否可用，如果都可用，则向所有节点执行setMaintenance
+   * 向可用节点执行setMaintenance
    *
    * see ConsulServiceRegistry.setStatus(...)
    */
   @Override
   public Response<Void> agentServiceSetMaintenance(String serviceId,
       boolean maintenanceEnabled, String reason) {
-    Assert.state(isAllConsulClientsHealthy(),
-        "lansheng228: >>> Set service maintenance failed: all consul clients must be available!"); // 全部节点都是可用的情况下才能注册
     Response<Void> response = null;
     for (ConsulClientHolder consulClient : consulClients) {
-      response = consulClient.getClient().agentServiceSetMaintenance(serviceId,
-          maintenanceEnabled, reason);
+      if (consulClient.isHealthy()) {
+        response = consulClient.getClient().agentServiceSetMaintenance(serviceId,
+            maintenanceEnabled, reason);
+      }
     }
+
+    log.info(
+        "lansheng228: >>> function agentServiceSetMaintenance => serviceId: {}  ===  maintenanceEnabled: {}  ===  reason: {} ===  response: {}  <<<",
+        serviceId, maintenanceEnabled, reason, response);
+
     return response;
   }
 
@@ -1563,9 +1598,13 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
       try {
         response = consulClient.getClient().agentReload();
       } catch (Exception e) {
-        log.error("lansheng228: >>> " + e.getMessage() + " <<<");
+        log.error("lansheng228: >>> {} <<<", e.getMessage());
       }
     }
+
+    log.info(
+        "lansheng228: >>> function agentReload =>  response: {}  <<<", response);
+
     return response;
   }
 
@@ -1661,6 +1700,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     connectList = tmpConsulClients.stream().map(ConsulClientHolder::getClientId)
         .collect(Collectors.toList());
     log.info("lansheng228: >>> Creating cluster consul clients: {} <<<", connectList);
+
     return tmpConsulClients;
   }
 
@@ -1670,6 +1710,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   protected List<String> prepareConnectList() {
     List<String> connectList = clusterConsulProperties.getClusterNodes();
     log.info("lansheng228: >>> Connect list: " + connectList + " <<<");
+
     return connectList;
   }
 
@@ -1708,6 +1749,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     retryableExceptions.put(ConnectException.class, true);
     retryableExceptions.put(TimeoutException.class, true);
     retryableExceptions.put(SocketTimeoutException.class, true);
+
     return retryableExceptions;
   }
 
@@ -1775,6 +1817,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
       log.info("lansheng228: >>> Using current ConsulClient[{}] for retry {} <<<",
           this.currentClient, retryCount);
     }
+
     return this.currentClient.getClient();
   }
 
@@ -1816,6 +1859,8 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
    * 对全部的ConsulClient检测一次健康状况
    */
   protected void checkConsulClientsHealth() {
+    this.consulClientHealthMap = checkAllConsulClientsHealth();
+
     boolean allHealthy = isAllConsulClientsHealthy();
     if (allHealthy && (this.currentClient != this.primaryClient)) { // 如果所有节点都是健康的，那么恢复currentClient为primaryClient
       this.currentClient = this.primaryClient;
@@ -1823,17 +1868,24 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     }
   }
 
+  private Map<ConsulClientHolder, Boolean> checkAllConsulClientsHealth() {
+    Map<ConsulClientHolder, Boolean> tmpConsulClientHealthMap = new HashMap<>();
+    for (ConsulClientHolder consulClient : this.consulClients) {
+      consulClient.checkHealth();
+      tmpConsulClientHealthMap.put(consulClient, consulClient.isHealthy());
+      consulClient.setPrimary(consulClient == this.primaryClient);
+    }
+
+    return tmpConsulClientHealthMap;
+  }
+
   /**
    * 判断全部的ConsulClient是否都是健康的?
    */
   protected boolean isAllConsulClientsHealthy() {
-    boolean allHealthy = true;
-    for (ConsulClientHolder consulClient : this.consulClients) {
-      consulClient.checkHealth();
-      allHealthy = allHealthy && consulClient.isHealthy();
-      consulClient.setPrimary(consulClient == this.primaryClient);
-    }
+    AtomicBoolean allHealthy = new AtomicBoolean(true);
+    this.consulClientHealthMap.values().forEach(isHealthy -> allHealthy.set(allHealthy.get() && isHealthy));
 
-    return allHealthy;
+    return allHealthy.get();
   }
 }
