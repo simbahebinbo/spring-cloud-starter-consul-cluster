@@ -166,6 +166,9 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
 
   private Map<ConsulClientHolder, Boolean> consulClientHealthMap;
 
+  private NewService currentNewService;
+  private String currentToken;
+
   /**
    * 集群节点在出错时切换的锁
    */
@@ -1447,6 +1450,8 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
 //
 //    return response;
 
+    this.scheduleAgentServiceRegister(newService);
+
     return retryTemplate.execute(context -> {
       Response<Void> result = null;
       for (ConsulClientHolder consulClient : consulClients) {
@@ -1460,6 +1465,31 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
 
       return result;
     });
+  }
+
+  protected void agentServiceReregisterWithTwo() {
+    Response<Void> result = null;
+    for (ConsulClientHolder consulClient : consulClients) {
+      if (consulClient.isHealthy()) {
+        result = consulClient.getClient().agentServiceRegister(currentNewService, currentToken);
+      }
+    }
+    log.info(
+        "lansheng228: >>> function agentServiceReregisterWithTwo => currentNewService: {}  ===  currentToken: {} ===  result: {} <<<",
+        currentNewService, currentToken, result);
+  }
+
+  protected void agentServiceReregisterWithOne() {
+    Response<Void> result = null;
+    for (ConsulClientHolder consulClient : consulClients) {
+      if (consulClient.isHealthy()) {
+        result = consulClient.getClient().agentServiceRegister(currentNewService);
+      }
+    }
+
+    log.info(
+        "lansheng228: >>> function agentServiceReregisterWithOne => currentNewService: {}  ===  result: {} <<<",
+        currentNewService, result);
   }
 
   /**
@@ -1481,6 +1511,8 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
 //        newService, token, response);
 //
 //    return response;
+
+    this.scheduleAgentServiceRegister(newService, token);
 
     return retryTemplate.execute(context -> {
       Response<Void> result = null;
@@ -1692,7 +1724,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
       properties.setHost(connects[0]);
       properties.setPort(Integer.parseInt(connects[1]));
 
-      ConsulClientHolder consulClientHolder  = new ConsulClientHolder(properties);
+      ConsulClientHolder consulClientHolder = new ConsulClientHolder(properties);
       return consulClientHolder;
     }).filter(ConsulClientHolder::isHealthy).sorted().collect(Collectors.toList()); // 排序
     connectList = tmpConsulClients.stream().map(ConsulClientHolder::getClientId)
@@ -1851,6 +1883,24 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   protected void scheduleConsulClientsHealthCheck() {
     consulClientsHealthCheckExecutor.scheduleAtFixedRate(
         this::checkConsulClientsHealth, clusterConsulProperties.getHealthCheckInterval(),
+        clusterConsulProperties.getHealthCheckInterval(), TimeUnit.MILLISECONDS);
+  }
+
+  //定期重新注册
+  protected void scheduleAgentServiceRegister(NewService newService, String token) {
+    this.currentNewService = newService;
+    this.currentToken = token;
+
+    consulClientsHealthCheckExecutor.scheduleAtFixedRate(
+        this::agentServiceReregisterWithTwo, clusterConsulProperties.getHealthCheckInterval(),
+        clusterConsulProperties.getHealthCheckInterval(), TimeUnit.MILLISECONDS);
+  }
+
+  protected void scheduleAgentServiceRegister(NewService newService) {
+    this.currentNewService = newService;
+
+    consulClientsHealthCheckExecutor.scheduleAtFixedRate(
+        this::agentServiceReregisterWithOne, clusterConsulProperties.getHealthCheckInterval(),
         clusterConsulProperties.getHealthCheckInterval(), TimeUnit.MILLISECONDS);
   }
 
