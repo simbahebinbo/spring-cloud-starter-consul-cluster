@@ -1436,6 +1436,9 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   public Response<Void> agentServiceRegister(NewService newService) {
     Assert.state(isAllConsulClientsHealthy(),
         "lansheng228: >>> Register service failed: all consul clients must be available!"); // 全部节点都是可用的情况下才能注册
+    log.info(
+        "lansheng228: >>> function agentServiceRegister => newService: {}  <<<",
+        newService);
     Response<Void> response = null;
     for (ConsulClientHolder consulClient : consulClients) {
       response = consulClient.getClient().agentServiceRegister(newService);
@@ -1461,10 +1464,22 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   public Response<Void> agentServiceRegister(NewService newService, String token) {
     Assert.state(isAllConsulClientsHealthy(),
         "lansheng228: >>> Register service failed: all consul clients must be available!"); // 全部节点都是可用的情况下才能注册
+    log.info(
+        "lansheng228: >>> function agentServiceRegister => newService: {}  ===  note: {} <<<",
+        newService, token);
     Response<Void> response = null;
     for (ConsulClientHolder consulClient : consulClients) {
       response = consulClient.getClient().agentServiceRegister(newService, token);
     }
+
+    retryTemplate.execute(context -> {
+      Response<Void> result = null;
+      log.info(
+          "lansheng228: >>> function agentServiceRegister => newService: {}  ===  note: {}  <<<",
+          newService, token);
+      return result;
+    });
+
     return response;
   }
 
