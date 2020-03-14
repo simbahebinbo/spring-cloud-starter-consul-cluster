@@ -1483,6 +1483,8 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   }
 
   protected void agentServiceReregister() {
+    log.info("lansheng228: >>> function agentServiceReregister  <<<");
+
     Response<Void> result = null;
     for (ConsulClientHolder consulClient : consulClients) {
       if (consulClient.isHealthy()) {
