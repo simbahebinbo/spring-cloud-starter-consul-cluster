@@ -1434,25 +1434,26 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
    */
   @Override
   public Response<Void> agentServiceRegister(NewService newService) {
-    Assert.state(isAllConsulClientsHealthy(),
-        "lansheng228: >>> Register service failed: all consul clients must be available!"); // 全部节点都是可用的情况下才能注册
-    log.info(
-        "lansheng228: >>> function agentServiceRegister => newService: {}  <<<",
-        newService);
-    Response<Void> response = null;
-    for (ConsulClientHolder consulClient : consulClients) {
-      response = consulClient.getClient().agentServiceRegister(newService);
-    }
+//    Assert.state(isAllConsulClientsHealthy(),
+//        "lansheng228: >>> Register service failed: all consul clients must be available!"); // 全部节点都是可用的情况下才能注册
+//    log.info(
+//        "lansheng228: >>> function agentServiceRegister => newService: {}  <<<",
+//        newService);
+//    Response<Void> response = null;
+//    for (ConsulClientHolder consulClient : consulClients) {
+//      response = consulClient.getClient().agentServiceRegister(newService);
+//    }
 
-    retryTemplate.execute(context -> {
-      Response<Void> result = null;
+    return retryTemplate.execute(context -> {
+      Response<Void> result = getRetryConsulClient(context).agentServiceRegister(newService);
       log.info(
           "lansheng228: >>> function agentServiceRegister => newService: {}  <<<",
           newService);
+
       return result;
     });
 
-    return response;
+//    return response;
   }
 
   /**
@@ -1462,25 +1463,26 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
    */
   @Override
   public Response<Void> agentServiceRegister(NewService newService, String token) {
-    Assert.state(isAllConsulClientsHealthy(),
-        "lansheng228: >>> Register service failed: all consul clients must be available!"); // 全部节点都是可用的情况下才能注册
-    log.info(
-        "lansheng228: >>> function agentServiceRegister => newService: {}  ===  note: {} <<<",
-        newService, token);
-    Response<Void> response = null;
-    for (ConsulClientHolder consulClient : consulClients) {
-      response = consulClient.getClient().agentServiceRegister(newService, token);
-    }
+//    Assert.state(isAllConsulClientsHealthy(),
+//        "lansheng228: >>> Register service failed: all consul clients must be available!"); // 全部节点都是可用的情况下才能注册
+//    log.info(
+//        "lansheng228: >>> function agentServiceRegister => newService: {}  ===  token: {} <<<",
+//        newService, token);
+//    Response<Void> response = null;
+//    for (ConsulClientHolder consulClient : consulClients) {
+//      response = consulClient.getClient().agentServiceRegister(newService, token);
+//    }
 
-    retryTemplate.execute(context -> {
-      Response<Void> result = null;
+    return retryTemplate.execute(context -> {
+      Response<Void> result = getRetryConsulClient(context).agentServiceRegister(newService, token);
       log.info(
-          "lansheng228: >>> function agentServiceRegister => newService: {}  ===  note: {}  <<<",
+          "lansheng228: >>> function agentServiceRegister => newService: {}  ===  token: {} <<<",
           newService, token);
+
       return result;
     });
 
-    return response;
+//    return response;
   }
 
   /**
