@@ -182,7 +182,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     this.retryTemplate = createRetryTemplate();
     // 初始化主要客户端
     ConsulClientHolder tmpPrimaryClient = initPrimaryClient();
-    
+
     List<String> modeList = getAllConsulAgentMode();
     // 集群中的节点只能是client模式的节点?
     if (clusterConsulProperties.isOnlyClients()) {
@@ -203,7 +203,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   //得到所有consul节点的模式：server 或者 client
   private List<String> getAllConsulAgentMode() {
     List<String> modeList = Lists.newArrayList();
-    consulClients.forEach(client -> {
+    this.consulClients.forEach(client -> {
       Response<Self> response = client.getClient().getAgentSelf();
       if (response.getValue().getConfig().isServer()) {
         modeList.add(SERVER);
@@ -1691,8 +1691,10 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
       properties.setTls(clusterConsulProperties.getTls());
       properties.setHost(connects[0]);
       properties.setPort(Integer.parseInt(connects[1]));
-      return new ConsulClientHolder(properties);
-    }).sorted().collect(Collectors.toList()); // 排序
+
+      ConsulClientHolder consulClientHolder  = new ConsulClientHolder(properties);
+      return consulClientHolder;
+    }).filter(ConsulClientHolder::isHealthy).sorted().collect(Collectors.toList()); // 排序
     connectList = tmpConsulClients.stream().map(ConsulClientHolder::getClientId)
         .collect(Collectors.toList());
     log.info("lansheng228: >>> Creating cluster consul clients: {} <<<", connectList);
@@ -1725,8 +1727,9 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     if (!CollectionUtils.isEmpty(retryableExceptions)) {
       retryableExceptions = createDefaultRetryableExceptions();
     }
+
     RetryTemplate tmpRetryTemplate = new RetryTemplate();
-    SimpleRetryPolicy retryPolicy = new SimpleRetryPolicy(consulClients.size(),
+    SimpleRetryPolicy retryPolicy = new SimpleRetryPolicy(this.consulClients.size(),
         retryableExceptions, true);
     tmpRetryTemplate.setRetryPolicy(retryPolicy);
     tmpRetryTemplate.setListeners(new RetryListener[]{this});

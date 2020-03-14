@@ -66,19 +66,33 @@ public class ConsulClientUtil {
         : consulProperties.getScheme() + CommonConstant.SEPARATOR_COLON + StringUtils.repeat(CommonConstant.SEPARATOR_VIRGULE, 2) + consulProperties
             .getHost();
 
-    ConsulClient consulClient;
+    ConsulClient consulClient = null;
 
     if (consulProperties.getTls() != null) {
       ConsulProperties.TLSConfig tls = consulProperties.getTls();
       TLSConfig tlsConfig = new TLSConfig(tls.getKeyStoreInstanceType(),
           tls.getCertificatePath(), tls.getCertificatePassword(),
           tls.getKeyStorePath(), tls.getKeyStorePassword());
-      log.info("lansheng228: >>> agentHost: " + agentHost + "      agentPort: " + agentPort + "     tlsConfig: " + tlsConfig + " <<<");
-      consulClient = new ConsulClient(agentHost, agentPort, tlsConfig);
+      try {
+        consulClient = new ConsulClient(agentHost, agentPort, tlsConfig);
+        log.info(
+            "lansheng228: >>> createConsulClient Success. agentHost: " + agentHost + "      agentPort: " + agentPort + "     tlsConfig: " + tlsConfig
+                + " <<<");
+      } catch (Exception e) {
+        log.info(
+            "lansheng228: >>> createConsulClient Fail. agentHost: " + agentHost + "      agentPort: " + agentPort + "     tlsConfig: " + tlsConfig
+                + "  {}  <<<", e.getMessage());
+      }
     } else {
       log.info("lansheng228: >>> agentHost: " + agentHost + "      agentPort: " + agentPort + " <<<");
-      consulClient = new ConsulClient(agentHost, agentPort);
+      try {
+        consulClient = new ConsulClient(agentHost, agentPort);
+        log.info("lansheng228: >>> createConsulClient Success. agentHost: " + agentHost + "      agentPort: " + agentPort + " <<<");
+      } catch (Exception e) {
+        log.info("lansheng228: >>> createConsulClient Fail. agentHost: " + agentHost + "      agentPort: " + agentPort + "  {}  <<<", e.getMessage());
+      }
     }
+
     return consulClient;
   }
 }

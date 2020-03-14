@@ -9,6 +9,7 @@ import com.ecwid.consul.v1.Response;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.cloud.consul.ConsulProperties;
 
 /*
@@ -61,12 +62,14 @@ public class ConsulClientHolder implements Comparable<ConsulClientHolder> {
   public void checkHealth() {
 
     boolean tmpHealthy = false;
-    try {
-      Response<Map<String, List<String>>> response = this.client.getCatalogServices(QueryParams.DEFAULT);
-      tmpHealthy = !response.getValue().isEmpty();
-    } catch (Exception e) {
-      log.error("lansheng228: >>> Check consul client health failed : {} <<<",
-          e.getMessage());
+    if (ObjectUtils.isNotEmpty(this.client)) {
+      try {
+        Response<Map<String, List<String>>> response = this.client.getCatalogServices(QueryParams.DEFAULT);
+        tmpHealthy = !response.getValue().isEmpty();
+      } catch (Exception e) {
+        log.error("lansheng228: >>> Check consul client health failed : {} <<<",
+            e.getMessage());
+      }
     }
     this.setHealthy(tmpHealthy);
     log.info("lansheng228: >>> Cluster consul client healthcheck finished: {} <<<", this);
