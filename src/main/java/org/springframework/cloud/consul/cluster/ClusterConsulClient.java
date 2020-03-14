@@ -1257,7 +1257,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     return retryTemplate.execute(context -> {
       Response<Void> result = getRetryConsulClient(context).agentCheckRegister(newCheck);
       log.info(
-          "lansheng228: >>> function agentForceLeave => newCheck: {}  ===  result: {} <<<",
+          "lansheng228: >>> function agentCheckRegister => newCheck: {}  ===  result: {} <<<",
           newCheck, result);
 
       return result;
@@ -1440,6 +1440,15 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     for (ConsulClientHolder consulClient : consulClients) {
       response = consulClient.getClient().agentServiceRegister(newService);
     }
+
+    retryTemplate.execute(context -> {
+      Response<Void> result = null;
+      log.info(
+          "lansheng228: >>> function agentServiceRegister => newService: {}  <<<",
+          newService);
+      return result;
+    });
+
     return response;
   }
 
