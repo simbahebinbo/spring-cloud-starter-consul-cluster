@@ -1931,10 +1931,11 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   }
 
   protected void createAllConsulClients() {
-    log.info("lansheng228: >>> createAllConsulClients. {} <<<", isAllConsulClientsHealthy());
+    List<ConsulClientHolder> tmpConsulClients = createConsulClients();
+    log.info("lansheng228: >>> createAllConsulClients. {} <<<", tmpConsulClients);
 
-    if (!isAllConsulClientsHealthy()) {
-      this.consulClients = createConsulClients();
+    if (this.consulClients != tmpConsulClients) {
+      this.consulClients = tmpConsulClients;
     }
   }
 
