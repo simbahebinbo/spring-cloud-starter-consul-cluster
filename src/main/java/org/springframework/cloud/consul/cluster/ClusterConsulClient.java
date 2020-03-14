@@ -182,11 +182,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     this.retryTemplate = createRetryTemplate();
     // 初始化主要客户端
     ConsulClientHolder tmpPrimaryClient = initPrimaryClient();
-
-    // 如果存在不可用节点则立即快速失败
-    Assert.state(this.consulClients.stream().allMatch(ConsulClientHolder::isHealthy),
-        "lansheng228: >>> Creating ClusterConsulClient failed：all consul nodes of cluster must be available!");
-
+    
     List<String> modeList = getAllConsulAgentMode();
     // 集群中的节点只能是client模式的节点?
     if (clusterConsulProperties.isOnlyClients()) {
