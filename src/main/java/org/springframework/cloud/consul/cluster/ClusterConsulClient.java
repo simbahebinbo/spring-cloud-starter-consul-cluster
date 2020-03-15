@@ -1732,8 +1732,6 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
       properties.setPort(Integer.parseInt(connects[1]));
 
       ConsulClientHolder consulClientHolder = new ConsulClientHolder(properties);
-      consulClientHolder.setPrimary(consulClientHolder == this.primaryClient);
-
       clientIdSet.add(consulClientHolder.getClientId());
 
       return consulClientHolder;
@@ -1868,7 +1866,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     context.setAttribute(CURRENT_CLIENT_KEY, this.currentClient);
     int retryCount = context.getRetryCount();
     if ((!this.currentClient.isHealthy())
-        && (this.consulClients.size() > 0)) {
+        && (CollectionUtils.isNotEmpty(this.consulClients))) {
       log.info("spring cloud consul cluster: >>> Current ConsulClient[{}] Is Unhealthy. Choose Again! <<<",
           this.currentClient);
       chooseConsulClient();
@@ -1950,6 +1948,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
 
     //存在不健康的consul节点，重新建立client
     List<ConsulClientHolder> tmpConsulClients = createConsulClients();
+    tmpConsulClients.forEach(consulClient -> consulClient.setPrimary(consulClient == this.primaryClient));
 
     boolean flag = ListUtil.isSame(this.consulClients, tmpConsulClients);
 
@@ -1969,6 +1968,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     for (ConsulClientHolder consulClient : this.consulClients) {
       consulClient.checkHealth();
       tmpConsulClientHealthMap.put(consulClient.getClientId(), consulClient.isHealthy());
+      consulClient.setPrimary(consulClient == this.primaryClient);
     }
     log.info("spring cloud consul cluster: >>> check all consul clients healthy: {} <<<", tmpConsulClientHealthMap);
 
