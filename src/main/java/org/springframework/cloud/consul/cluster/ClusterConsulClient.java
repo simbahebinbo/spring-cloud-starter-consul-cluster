@@ -150,11 +150,6 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   private final RetryTemplate retryTemplate;
 
   /**
-   * 通过一致性hash算法算出来的节点,该节点作为主要使用节点,这样避免集群节点压力问题
-   */
-  private final ConsulClientHolder primaryClient;
-
-  /**
    * 当前正在使用的ConsulClient
    */
   @Getter
@@ -183,11 +178,8 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     this.consulClients = createConsulClients();
     // 创建重试模板
     this.retryTemplate = createRetryTemplate();
-    // 初始化主要客户端
-    ConsulClientHolder tmpPrimaryClient = initPrimaryClient();
-
-    this.primaryClient = tmpPrimaryClient;
-    this.currentClient = tmpPrimaryClient;
+    // 初始化客户端
+    this.currentClient = initConsulClient();
     this.scheduleConsulClientsHealthCheck();
     this.scheduleConsulClientsCreate();
   }
@@ -1732,9 +1724,6 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
       properties.setPort(Integer.parseInt(connects[1]));
 
       ConsulClientHolder consulClientHolder = new ConsulClientHolder(properties);
-      log.info("spring cloud consul cluster: >>> consulClientHolder: {}, primaryClient: {} <<<",
-          consulClientHolder, this.primaryClient);
-
       clientIdSet.add(consulClientHolder.getClientId());
 
       return consulClientHolder;
@@ -1813,13 +1802,19 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   }
 
   /**
-   * 根据已生成的集群列表(不管节点健康状况)初始化主要ConsulClient
+   * 初始化ConsulClient
    */
-  protected ConsulClientHolder initPrimaryClient() {
+  private ConsulClientHolder initConsulClient() {
     String key = this.clusterConsulProperties.getClusterClientKey();
     List<ConsulClientHolder> clients = this.consulClients;
+    ConsulClientHolder chooseClient = chooseClient(key, clients);
+    log.info("spring cloud consul cluster: >>>  init consul client: {}  <<<", chooseClient);
+
+    return chooseClient;
+  }
+
+  private ConsulClientHolder chooseClient(String key, List<ConsulClientHolder> clients) {
     ConsulClientHolder chooseClient = ConsulClientUtil.chooseClient(key, clients);
-    chooseClient.setPrimary(true);
     log.info("spring cloud consul cluster: >>>  Hash Key: {}  ==== Hash List: {}  ====  Hash Result: {} <<<", key, clients, chooseClient);
 
     return chooseClient;
@@ -1844,7 +1839,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
         }
 
         // 在健康节点中通过哈希一致性算法选取一个节点
-        ConsulClientHolder choosedClient = ConsulClientUtil.chooseClient(
+        ConsulClientHolder choosedClient = chooseClient(
             this.clusterConsulProperties.getClusterClientKey(), availableClients);
 
         if (choosedClient == null) {
@@ -1929,11 +1924,8 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     this.consulClientHealthMap = checkAllConsulClientsHealth();
 
     boolean allHealthy = isAllConsulClientsHealthy();
-    if (allHealthy &&
-        (this.currentClient != this.primaryClient)
-        && this.primaryClient.isHealthy()) { // 如果所有节点都是健康的，那么恢复currentClient为primaryClient
-      this.currentClient = this.primaryClient;
-      log.info("spring cloud consul cluster: >>> The primaryClient is recovered when all consul clients is healthy. <<<");
+    if (allHealthy) {
+      log.info("spring cloud consul cluster: >>> All consul clients are healthy. <<<");
     }
   }
 
@@ -1951,11 +1943,6 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
 
     //存在不健康的consul节点，重新建立client
     List<ConsulClientHolder> tmpConsulClients = createConsulClients();
-    tmpConsulClients.forEach(tmpConsulClient -> {
-      tmpConsulClient.setPrimary(tmpConsulClient == this.primaryClient);
-      log.info("spring cloud consul cluster: >>> tmpConsulClient: {}, primaryClient: {} <<<",
-          tmpConsulClient, this.primaryClient);
-    });
 
     boolean flag = ListUtil.isSame(this.consulClients, tmpConsulClients);
 
@@ -1975,9 +1962,6 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     for (ConsulClientHolder consulClient : this.consulClients) {
       consulClient.checkHealth();
       tmpConsulClientHealthMap.put(consulClient.getClientId(), consulClient.isHealthy());
-      log.info("spring cloud consul cluster: >>> consulClient: {}, primaryClient: {} <<<",
-          consulClient, this.primaryClient);
-      consulClient.setPrimary(consulClient == this.primaryClient);
     }
     log.info("spring cloud consul cluster: >>> check all consul clients healthy: {} <<<", tmpConsulClientHealthMap);
 

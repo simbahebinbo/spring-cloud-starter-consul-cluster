@@ -37,13 +37,6 @@ public class ConsulClientHolder implements Comparable<ConsulClientHolder> {
   @Setter
   private boolean healthy = true;
 
-  /**
-   * 是否为主客户端
-   */
-  @Getter
-  @Setter
-  private boolean isPrimary = false;
-
   public ConsulClientHolder(ConsulProperties properties) {
     super();
     this.properties = properties;
@@ -89,8 +82,7 @@ public class ConsulClientHolder implements Comparable<ConsulClientHolder> {
 
   @Override
   public String toString() {
-    return "{ clientId = " + getClientId() + ", healthy = " + healthy
-        + ", isPrimary = " + isPrimary + " }";
+    return "{ clientId = " + getClientId() + ", healthy = " + healthy + " }";
   }
 }
 
