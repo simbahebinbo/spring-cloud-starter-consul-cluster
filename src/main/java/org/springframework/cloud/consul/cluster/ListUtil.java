@@ -20,6 +20,7 @@ public class ListUtil {
    */
   public static boolean isSame(@NonNull List<ConsulClientHolder> listOne, @NonNull List<ConsulClientHolder> listTwo) {
     if (listOne != listTwo) {
+      log.info("ListUtil: 数量不同");
       return false;
     }
 
@@ -31,6 +32,7 @@ public class ListUtil {
         .orElseGet(Collections::emptyList);
 
     if (sortListOne.size() != sortListTwo.size()) {
+      log.info("ListUtil: 排序后数量不同");
       return false;
     }
 
@@ -38,7 +40,10 @@ public class ListUtil {
     boolean flag = true;
 
     for (int i = 0; i < len; i++) {
-      if (sortListOne.get(i).compareTo(sortListTwo.get(i)) != 0) {
+      String clientIdOne = sortListOne.get(i).getClientId();
+      String clientIdTwo = sortListTwo.get(i).getClientId();
+      if (!clientIdOne.equals(clientIdTwo)) {
+        log.info("ListUtil: clientId不同");
         flag = false;
         break;
       }
