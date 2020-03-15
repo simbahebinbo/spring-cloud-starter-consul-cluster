@@ -6,6 +6,7 @@ import java.net.SocketTimeoutException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -17,6 +18,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 
 import com.ecwid.consul.transport.TransportException;
 import com.ecwid.consul.v1.ConsulClient;
@@ -162,6 +164,8 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
 
   private Map<String, Boolean> consulClientHealthMap;
 
+  private Set<String> clientIdSet;
+
   private NewService currentNewService;
   private String currentToken;
 
@@ -173,6 +177,8 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   public ClusterConsulClient(ClusterConsulProperties clusterConsulProperties) {
     super();
     this.clusterConsulProperties = clusterConsulProperties;
+    this.consulClientHealthMap = Maps.newConcurrentMap();
+    this.clientIdSet = Sets.newHashSet();
     // 创建所有集群节点
     this.consulClients = createConsulClients();
     // 创建重试模板
@@ -182,7 +188,6 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
 
     this.primaryClient = tmpPrimaryClient;
     this.currentClient = tmpPrimaryClient;
-    this.consulClientHealthMap = Maps.newConcurrentMap();
     this.scheduleConsulClientsHealthCheck();
     this.scheduleConsulClientsCreate();
   }
@@ -1715,6 +1720,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
       properties.setPort(Integer.parseInt(connects[1]));
 
       ConsulClientHolder consulClientHolder = new ConsulClientHolder(properties);
+      clientIdSet.add(consulClientHolder.getClientId());
 
       return consulClientHolder;
     }).filter(ConsulClientHolder::isHealthy).sorted().collect(Collectors.toList()); // 排序
@@ -1913,13 +1919,22 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   }
 
   protected void createAllConsulClients() {
+    long currentHealthClientNum = this.consulClientHealthMap.values().stream().filter(isHealthy -> isHealthy).count();
+    int clientNum = clientIdSet.size();
+    log.info("spring cloud consul cluster: >>> current health client num: {}           all client num: {}     Is Same? {} <<<",
+        currentHealthClientNum, clientNum, clientNum == currentHealthClientNum);
+    //所有consul节点都健康，无需重新建立client
+    if (clientNum == currentHealthClientNum) {
+      return;
+    }
+
+    //存在不健康的consul节点，重新建立client
     List<ConsulClientHolder> tmpConsulClients = createConsulClients();
 
     boolean flag = ListUtil.isSame(this.consulClients, tmpConsulClients);
 
-    log.info("spring cloud consul cluster: >>> createAllConsulClients. {}           The Size: {}.     Is Same? {} <<<", tmpConsulClients,
-        tmpConsulClients.size(),
-        flag);
+    log.info("spring cloud consul cluster: >>> createAllConsulClients. {}           The Size: {}.     Is Same? {} <<<",
+        tmpConsulClients, tmpConsulClients.size(), flag);
 
     //consul节点有变化
     if (!flag) {
