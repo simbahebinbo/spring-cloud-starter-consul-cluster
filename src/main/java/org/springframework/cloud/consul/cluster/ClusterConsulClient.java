@@ -1496,7 +1496,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   }
 
   /**
-   * 则向可用节点注册服务
+   * 向可用节点注册服务
    *
    * see ConsulServiceRegistry.register(...)
    */
