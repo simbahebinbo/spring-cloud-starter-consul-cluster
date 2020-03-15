@@ -179,7 +179,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     // 创建重试模板
     this.retryTemplate = createRetryTemplate();
     // 初始化客户端
-    this.currentClient = initConsulClient();
+    this.currentClient = initCurrentConsulClient();
     this.scheduleConsulClientsHealthCheck();
     this.scheduleConsulClientsCreate();
   }
@@ -1804,11 +1804,9 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   /**
    * 初始化ConsulClient
    */
-  private ConsulClientHolder initConsulClient() {
-    String key = this.clusterConsulProperties.getClusterClientKey();
-    List<ConsulClientHolder> clients = this.consulClients;
-    ConsulClientHolder chooseClient = chooseClient(key, clients);
-    log.info("spring cloud consul cluster: >>>  init consul client: {}  <<<", chooseClient);
+  private ConsulClientHolder initCurrentConsulClient() {
+    ConsulClientHolder chooseClient = chooseClient(this.clusterConsulProperties.getClusterClientKey(), this.consulClients);
+    log.info("spring cloud consul cluster: >>>  init current consul client: {}  <<<", chooseClient);
 
     return chooseClient;
   }
@@ -1834,7 +1832,6 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
         log.info("spring cloud consul cluster: >>> Available ConsulClients: " + availableClients + " <<<");
 
         if (ObjectUtils.isEmpty(availableClients)) {
-          checkConsulClientsHealth(); // 一个健康节点都没有，则立马执行一次全部健康检测
           throw new IllegalStateException("spring cloud consul cluster: >>> No consul client is available!!!");
         }
 
