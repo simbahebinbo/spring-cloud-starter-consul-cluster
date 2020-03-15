@@ -1314,7 +1314,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   @Override
   public Response<Void> agentCheckPass(String checkId) {
     Response<Void> response = null;
-    for (ConsulClientHolder consulClient : consulClients) {
+    for (ConsulClientHolder consulClient : this.consulClients) {
       try {
         response = consulClient.getClient().agentCheckPass(checkId);
       } catch (Exception e) {
@@ -1337,7 +1337,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   @Override
   public Response<Void> agentCheckPass(String checkId, String note) {
     Response<Void> response = null;
-    for (ConsulClientHolder consulClient : consulClients) {
+    for (ConsulClientHolder consulClient : this.consulClients) {
       try {
         response = consulClient.getClient().agentCheckPass(checkId, note);
       } catch (Exception e) {
@@ -1359,7 +1359,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   @Override
   public Response<Void> agentCheckPass(String checkId, String note, String token) {
     Response<Void> response = null;
-    for (ConsulClientHolder consulClient : consulClients) {
+    for (ConsulClientHolder consulClient : this.consulClients) {
       try {
         response = consulClient.getClient().agentCheckPass(checkId, note, token);
       } catch (Exception e) {
@@ -1554,7 +1554,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   public Response<Void> agentServiceDeregister(String serviceId, String token) {
     return this.retryTemplate.execute(context -> {
       Response<Void> response = null;
-      for (ConsulClientHolder consulClient : consulClients) {
+      for (ConsulClientHolder consulClient : this.consulClients) {
         if (consulClient.isHealthy()) {
           response = consulClient.getClient().agentServiceDeregister(serviceId, token);
         }
@@ -1577,7 +1577,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   public Response<Void> agentServiceSetMaintenance(String serviceId, boolean maintenanceEnabled) {
     return this.retryTemplate.execute(context -> {
       Response<Void> response = null;
-      for (ConsulClientHolder consulClient : consulClients) {
+      for (ConsulClientHolder consulClient : this.consulClients) {
         if (consulClient.isHealthy()) {
           response = consulClient.getClient().agentServiceSetMaintenance(serviceId,
               maintenanceEnabled);
@@ -1602,7 +1602,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
       boolean maintenanceEnabled, String reason) {
     return this.retryTemplate.execute(context -> {
       Response<Void> response = null;
-      for (ConsulClientHolder consulClient : consulClients) {
+      for (ConsulClientHolder consulClient : this.consulClients) {
         if (consulClient.isHealthy()) {
           response = consulClient.getClient().agentServiceSetMaintenance(serviceId,
               maintenanceEnabled, reason);
@@ -1623,7 +1623,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   @Override
   public Response<Void> agentReload() {
     Response<Void> response = null;
-    for (ConsulClientHolder consulClient : consulClients) {
+    for (ConsulClientHolder consulClient : this.consulClients) {
       try {
         response = consulClient.getClient().agentReload();
       } catch (Exception e) {
