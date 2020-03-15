@@ -1707,7 +1707,6 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
       properties.setPort(Integer.parseInt(connects[1]));
 
       ConsulClientHolder consulClientHolder = new ConsulClientHolder(properties);
-      consulClientHolder.setPrimary(this.primaryClient == consulClientHolder);
 
       return consulClientHolder;
     }).filter(ConsulClientHolder::isHealthy).sorted().collect(Collectors.toList()); // 排序
@@ -1904,5 +1903,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
       //重新注册
       agentServiceReregister();
     }
+    
+    this.consulClients.forEach(consulClient -> consulClient.setPrimary(this.primaryClient == consulClient));
   }
 }
