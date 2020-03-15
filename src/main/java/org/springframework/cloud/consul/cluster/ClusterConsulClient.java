@@ -1927,12 +1927,17 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
 
     boolean flag = ListUtil.isSame(this.consulClients, tmpConsulClients);
 
-    log.info("lansheng228: >>> createAllConsulClients. {}           The Size: {}.     Is Same? {} <<<", tmpConsulClients, tmpConsulClients.size(), flag);
+    log.info("lansheng228: >>> createAllConsulClients. {}           The Size: {}.     Is Same? {} <<<", tmpConsulClients, tmpConsulClients.size(),
+        flag);
 
     //consul节点有变化
     if (!flag) {
       this.consulClients = tmpConsulClients;
-      throw new BadConsulAgentException("lansheng228: >>> consul client has change");
+      try {
+        throw new BadConsulAgentException("lansheng228: >>> consul client has change");
+      } catch (Exception ignored) {
+
+      }
       //重新注册
 //      agentServiceReregister();
     }
