@@ -10,10 +10,13 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import com.google.common.collect.Maps;
 
 import com.ecwid.consul.transport.TransportException;
 import com.ecwid.consul.v1.ConsulClient;
@@ -156,6 +159,9 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   @Setter
   private volatile ConsulClientHolder currentClient;
 
+
+  private Map<String, Boolean> consulClientHealthMap;
+
   private NewService currentNewService;
   private String currentToken;
 
@@ -176,6 +182,8 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
 
     this.primaryClient = tmpPrimaryClient;
     this.currentClient = tmpPrimaryClient;
+    this.consulClientHealthMap = Maps.newConcurrentMap();
+    this.scheduleConsulClientsHealthCheck();
     this.scheduleConsulClientsCreate();
   }
 
@@ -1809,6 +1817,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
         log.info("spring cloud consul cluster: >>> Available ConsulClients: " + availableClients + " <<<");
 
         if (ObjectUtils.isEmpty(availableClients)) {
+          checkConsulClientsHealth(); // 一个健康节点都没有，则立马执行一次全部健康检测
           throw new IllegalStateException("spring cloud consul cluster: >>> No consul client is available!!!");
         }
 
@@ -1878,10 +1887,29 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   /**
    * ConsulClient集群的健康检测
    */
+  protected void scheduleConsulClientsHealthCheck() {
+    consulClientsExecutor.scheduleAtFixedRate(
+        this::checkConsulClientsHealth, clusterConsulProperties.getHealthCheckInterval(),
+        clusterConsulProperties.getHealthCheckInterval(), TimeUnit.MILLISECONDS);
+  }
+
   protected void scheduleConsulClientsCreate() {
     consulClientsExecutor.scheduleAtFixedRate(
         this::createAllConsulClients, clusterConsulProperties.getHealthCheckInterval(),
         clusterConsulProperties.getHealthCheckInterval(), TimeUnit.MILLISECONDS);
+  }
+
+  /**
+   * 对全部的ConsulClient检测一次健康状况
+   */
+  protected void checkConsulClientsHealth() {
+    this.consulClientHealthMap = checkAllConsulClientsHealth();
+
+    boolean allHealthy = isAllConsulClientsHealthy();
+    if (allHealthy && (this.currentClient != this.primaryClient)) { // 如果所有节点都是健康的，那么恢复currentClient为primaryClient
+      this.currentClient = this.primaryClient;
+      log.info("spring cloud consul cluster: >>> The primaryClient is recovered when all consul clients is healthy. <<<");
+    }
   }
 
   protected void createAllConsulClients() {
@@ -1893,17 +1921,34 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
         tmpConsulClients.size(),
         flag);
 
-    if (flag) {
-      if (this.currentClient != this.primaryClient) { // 如果所有节点都是健康的，那么恢复currentClient为primaryClient
-        this.currentClient = this.primaryClient;
-        log.info("spring cloud consul cluster: >>> The primaryClient is recovered when all consul clients is healthy. <<<");
-      }
-    } else {  //consul节点有变化
+    //consul节点有变化
+    if (!flag) {
       this.consulClients = tmpConsulClients;
       //重新注册
       agentServiceReregister();
     }
-    
-    this.consulClients.forEach(consulClient -> consulClient.setPrimary(this.primaryClient == consulClient));
+  }
+
+  private Map<String, Boolean> checkAllConsulClientsHealth() {
+    Map<String, Boolean> tmpConsulClientHealthMap = new HashMap<>();
+    for (ConsulClientHolder consulClient : this.consulClients) {
+      consulClient.checkHealth();
+      tmpConsulClientHealthMap.put(consulClient.getClientId(), consulClient.isHealthy());
+      consulClient.setPrimary(consulClient == this.primaryClient);
+    }
+    log.info("spring cloud consul cluster: >>> check all consul clients healthy: {} <<<", tmpConsulClientHealthMap);
+
+    return tmpConsulClientHealthMap;
+  }
+
+  /**
+   * 判断全部的ConsulClient是否都是健康的?
+   */
+  protected boolean isAllConsulClientsHealthy() {
+    AtomicBoolean allHealthy = new AtomicBoolean(true);
+    this.consulClientHealthMap.values().forEach(isHealthy -> allHealthy.set(allHealthy.get() && isHealthy));
+    log.info("spring cloud consul cluster: >>>  All Consul Clients are health? {} <<<", allHealthy.get());
+
+    return allHealthy.get();
   }
 }
