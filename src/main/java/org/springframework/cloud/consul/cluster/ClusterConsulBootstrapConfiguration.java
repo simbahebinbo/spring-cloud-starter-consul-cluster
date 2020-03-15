@@ -43,7 +43,6 @@ public class ClusterConsulBootstrapConfiguration {
     HostInfo hostInfo = inetUtils.findFirstNonLoopbackHostInfo();
     clusterConsulProperties.setClusterClientKey(hostInfo.getIpAddress());
     clusterConsulProperties.setClusterNodes(clusterConsulConfiguration.getClusterNodes());
-    clusterConsulProperties.setNodeMode(clusterConsulConfiguration.getNodeMode());
 
     return clusterConsulProperties;
   }
@@ -53,7 +52,7 @@ public class ClusterConsulBootstrapConfiguration {
   public ConsulClient consulClient(ConsulProperties consulProperties) {
     ClusterConsulClient clusterConsulClient = new ClusterConsulClient((ClusterConsulProperties) consulProperties);
 
-    log.info("lansheng228: >>> Default ConsulClient created : {}, with config properties : {} <<<",
+    log.info("spring cloud consul cluster: >>> Default ConsulClient created : {}, with config properties : {} <<<",
         clusterConsulClient, consulProperties);
     return clusterConsulClient;
   }

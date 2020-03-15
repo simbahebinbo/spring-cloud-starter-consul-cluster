@@ -34,7 +34,6 @@ public class ConsulClientUtil {
    * @param clients - 在每次调用之前请确保clients的顺序是一致的
    */
   public static <T> T chooseClient(String key, List<T> clients) {
-    Assert.hasText(key, "lansheng228: >>> Parameter 'key' must be required!");
     int prime = 31; // always used in hashcode method
     return chooseClient(Hashing.murmur3_128(prime).hashString(key, DEFAULT_CHARSET),
         clients);
@@ -47,7 +46,6 @@ public class ConsulClientUtil {
    * @param clients - 在每次调用之前请确保clients的顺序是一致的
    */
   public static <T> T chooseClient(HashCode keyHash, List<T> clients) {
-    Assert.notNull(keyHash, "lansheng228: >>> Parameter 'keyHash' must be required!");
     if (!CollectionUtils.isEmpty(clients)) {
       final List<T> nodeList = new ArrayList<>(clients);
       int hitIndex = Hashing.consistentHash(keyHash, nodeList.size());
@@ -76,20 +74,20 @@ public class ConsulClientUtil {
       try {
         consulClient = new ConsulClient(agentHost, agentPort, tlsConfig);
         log.info(
-            "lansheng228: >>> createConsulClient Success. agentHost: " + agentHost + "      agentPort: " + agentPort + "     tlsConfig: " + tlsConfig
+            "spring cloud consul cluster: >>> createConsulClient Success. agentHost: " + agentHost + "      agentPort: " + agentPort + "     tlsConfig: " + tlsConfig
                 + " <<<");
       } catch (Exception e) {
         log.info(
-            "lansheng228: >>> createConsulClient Fail. agentHost: " + agentHost + "      agentPort: " + agentPort + "     tlsConfig: " + tlsConfig
+            "spring cloud consul cluster: >>> createConsulClient Fail. agentHost: " + agentHost + "      agentPort: " + agentPort + "     tlsConfig: " + tlsConfig
                 + "  {}  <<<", e.getMessage());
       }
     } else {
-      log.info("lansheng228: >>> agentHost: " + agentHost + "      agentPort: " + agentPort + " <<<");
+      log.info("spring cloud consul cluster: >>> agentHost: " + agentHost + "      agentPort: " + agentPort + " <<<");
       try {
         consulClient = new ConsulClient(agentHost, agentPort);
-        log.info("lansheng228: >>> createConsulClient Success. agentHost: " + agentHost + "      agentPort: " + agentPort + " <<<");
+        log.info("spring cloud consul cluster: >>> createConsulClient Success. agentHost: " + agentHost + "      agentPort: " + agentPort + " <<<");
       } catch (Exception e) {
-        log.info("lansheng228: >>> createConsulClient Fail. agentHost: " + agentHost + "      agentPort: " + agentPort + "  {}  <<<", e.getMessage());
+        log.info("spring cloud consul cluster: >>> createConsulClient Fail. agentHost: " + agentHost + "      agentPort: " + agentPort + "  {}  <<<", e.getMessage());
       }
     }
 

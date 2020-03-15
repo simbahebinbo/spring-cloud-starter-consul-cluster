@@ -32,20 +32,13 @@ public class ClusterConsulConfiguration {
   @Getter
   private String nodes;
 
-  /**
-   * 初始化时要求所有节点的类型
-   */
-  @Setter
-  @Getter
-  private String mode;
-
   @Getter
   private List<String> clusterNodes;
 
   @PostConstruct
   public void init() {
     if (StringUtils.isEmpty(this.nodes)) {
-      log.error("lansheng228: >>> spring.cloud.consul.cluster.nodes cannot be null <<<");
+      log.error("spring cloud consul cluster: >>> spring.cloud.consul.cluster.nodes cannot be null <<<");
       throw new BadConfigException("spring.cloud.consul.cluster.nodes cannot be null");
     }
 
@@ -53,7 +46,7 @@ public class ClusterConsulConfiguration {
         .collect(Collectors.toList());
 
     if (CollectionUtils.isEmpty(this.clusterNodes)) {
-      log.error("lansheng228: >>> spring.cloud.consul.cluster.nodes config error. For example: example.com:8500,192.168.1.1:8080 <<<");
+      log.error("spring cloud consul cluster: >>> spring.cloud.consul.cluster.nodes config error. For example: example.com:8500,192.168.1.1:8080 <<<");
       throw new BadConfigException("spring.cloud.consul.cluster.nodes config error.");
     }
 
@@ -61,22 +54,9 @@ public class ClusterConsulConfiguration {
       List<String> parts = Arrays.stream(clusterNode.split(CommonConstant.SEPARATOR_COLON)).filter(StringUtils::isNotEmpty)
           .collect(Collectors.toList());
       if (CollectionUtils.isEmpty(parts)) {
-        log.error("lansheng228: >>> spring.cloud.consul.cluster.nodes config error. For example: example.com:8500,192.168.1.1:8080 <<<");
+        log.error("spring cloud consul cluster: >>> spring.cloud.consul.cluster.nodes config error. For example: example.com:8500,192.168.1.1:8080 <<<");
         throw new BadConfigException("spring.cloud.consul.cluster.nodes config error.");
       }
     });
-
-    if (StringUtils.isEmpty(this.mode)) {
-      this.mode = NodeModeEnum.ALL.getValue();
-    } else {
-      if (NodeModeEnum.findByValue(this.mode) == null) {
-        log.error("lansheng228: >>> spring.cloud.consul.cluster.modes config error. For example: client or server or all <<<");
-        throw new BadConfigException("spring.cloud.consul.cluster.modes config error.");
-      }
-    }
-  }
-
-  public NodeModeEnum getNodeMode() {
-    return NodeModeEnum.findByValue(mode);
   }
 }

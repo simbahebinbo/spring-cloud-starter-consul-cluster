@@ -49,10 +49,10 @@ public class ConsulClientHolder implements Comparable<ConsulClientHolder> {
     this.properties = properties;
     this.client = ConsulClientUtil.createConsulClient(properties);
     if (ObjectUtils.isNotEmpty(this.client)) {
-      log.info("lansheng228: >>> Cluster ConsulClient[{}] created! <<<", this.getClientId());
+      log.info("spring cloud consul cluster: >>> Cluster ConsulClient[{}] created! <<<", this.getClientId());
       this.checkHealth(); // 创建时做一次健康检测
     } else {
-      log.warn("lansheng228: >>> Cluster ConsulClient[{}] cannot create! <<<", this.getClientId());
+      log.warn("spring cloud consul cluster: >>> Cluster ConsulClient[{}] cannot create! <<<", this.getClientId());
     }
   }
 
@@ -71,12 +71,12 @@ public class ConsulClientHolder implements Comparable<ConsulClientHolder> {
         Response<Map<String, List<String>>> response = this.client.getCatalogServices(QueryParams.DEFAULT);
         tmpHealthy = !response.getValue().isEmpty();
       } catch (Exception e) {
-        log.error("lansheng228: >>> Check consul client health failed : {} <<<",
+        log.error("spring cloud consul cluster: >>> Check consul client health failed : {} <<<",
             e.getMessage());
       }
     }
     this.setHealthy(tmpHealthy);
-    log.info("lansheng228: >>> Cluster consul client health check finished: {} <<<", this);
+    log.info("spring cloud consul cluster: >>> Cluster consul client health check finished: {} <<<", this);
   }
 
   /**

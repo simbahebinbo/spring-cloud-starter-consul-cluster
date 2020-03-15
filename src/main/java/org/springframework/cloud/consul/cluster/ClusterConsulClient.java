@@ -3,13 +3,11 @@ package org.springframework.cloud.consul.cluster;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.SocketTimeoutException;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -18,7 +16,6 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 import com.ecwid.consul.transport.TransportException;
@@ -67,14 +64,12 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.ObjectUtils;
-import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.springframework.cloud.consul.ConsulProperties;
 import org.springframework.retry.RetryCallback;
 import org.springframework.retry.RetryContext;
 import org.springframework.retry.RetryListener;
 import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
-import org.springframework.util.Assert;
 
 /**
  * 集群版ConsulClient
@@ -130,9 +125,6 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
 
   private static final String CURRENT_CLIENT_KEY = "currentClient";
 
-  private static final String CLIENT = "client";
-  private static final String SERVER = "server";
-
   @Getter
   private final ScheduledExecutorService consulClientsExecutor = Executors
       .newScheduledThreadPool(Runtime.getRuntime().availableProcessors() * 4);
@@ -168,7 +160,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   private volatile ConsulClientHolder currentClient;
 
 
-  private Map<ConsulClientHolder, Boolean> consulClientHealthMap;
+  private Map<String, Boolean> consulClientHealthMap;
 
   private NewService currentNewService;
   private String currentToken;
@@ -180,8 +172,6 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
 
   public ClusterConsulClient(ClusterConsulProperties clusterConsulProperties) {
     super();
-    Assert.notNull(clusterConsulProperties,
-        "lansheng228: >>> Parameter 'consulProperties' must be required!");
     this.clusterConsulProperties = clusterConsulProperties;
     // 创建所有集群节点
     this.consulClients = createConsulClients();
@@ -190,17 +180,6 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     // 初始化主要客户端
     ConsulClientHolder tmpPrimaryClient = initPrimaryClient();
 
-    List<String> modeList = getAllConsulAgentMode();
-    // 集群中的节点只能是client模式的节点?
-    if (clusterConsulProperties.isOnlyClients()) {
-      boolean isAllClientNode = modeList.stream().allMatch(CLIENT::equals);
-      Assert.state(isAllClientNode,
-          "lansheng228: >>> Creating ClusterConsulClient failed：all consul nodes of cluster must be in 'client' mode!");
-    } else if (clusterConsulProperties.isOnlyServers()) {
-      boolean isAllServerNode = modeList.stream().allMatch(SERVER::equals);
-      Assert.state(isAllServerNode,
-          "lansheng228: >>> Creating ClusterConsulClient failed：all consul nodes of cluster must be in 'server' mode!");
-    }
     this.primaryClient = tmpPrimaryClient;
     this.currentClient = tmpPrimaryClient;
     this.consulClientHealthMap = Maps.newConcurrentMap();
@@ -208,26 +187,11 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     this.scheduleConsulClientsCreate();
   }
 
-  //得到所有consul节点的模式：server 或者 client
-  private List<String> getAllConsulAgentMode() {
-    List<String> modeList = Lists.newArrayList();
-    this.consulClients.forEach(client -> {
-      Response<Self> response = client.getClient().getAgentSelf();
-      if (response.getValue().getConfig().isServer()) {
-        modeList.add(SERVER);
-      } else {
-        modeList.add(CLIENT);
-      }
-    });
-
-    return modeList;
-  }
-
   @Override
   public Response<String> getStatusLeader() {
     return this.retryTemplate.execute(context -> {
       Response<String> leader = getRetryConsulClient(context).getStatusLeader();
-      log.debug("lansheng228: >>> function getStatusLeader => leader: {} <<<", leader);
+      log.debug("spring cloud consul cluster: >>> function getStatusLeader => leader: {} <<<", leader);
 
       return leader;
     });
@@ -237,7 +201,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   public Response<List<String>> getStatusPeers() {
     return this.retryTemplate.execute(context -> {
       Response<List<String>> peers = getRetryConsulClient(context).getStatusPeers();
-      log.debug("lansheng228: >>> function getStatusPeers => peers: {} <<<", peers);
+      log.debug("spring cloud consul cluster: >>> function getStatusPeers => peers: {} <<<", peers);
 
       return peers;
     });
@@ -247,7 +211,8 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   public Response<String> sessionCreate(NewSession newSession, QueryParams queryParams) {
     return this.retryTemplate.execute(context -> {
       Response<String> sessionCreate = getRetryConsulClient(context).sessionCreate(newSession, queryParams);
-      log.debug("lansheng228: >>> function sessionCreate => newSession: {} === queryParams: {} === sessionCreate: {} <<<", newSession, queryParams,
+      log.debug("spring cloud consul cluster: >>> function sessionCreate => newSession: {} === queryParams: {} === sessionCreate: {} <<<", newSession,
+          queryParams,
           sessionCreate);
 
       return sessionCreate;
@@ -259,7 +224,9 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     return this.retryTemplate.execute(context -> {
       Response<String> sessionCreate = getRetryConsulClient(context).sessionCreate(newSession,
           queryParams, token);
-      log.debug("lansheng228: >>> function sessionCreate => newSession: {} === queryParams: {} === token: {} === sessionCreate: {} <<<", newSession,
+      log.debug(
+          "spring cloud consul cluster: >>> function sessionCreate => newSession: {} === queryParams: {} === token: {} === sessionCreate: {} <<<",
+          newSession,
           queryParams, token, sessionCreate);
 
       return sessionCreate;
@@ -269,7 +236,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   @Override
   public Response<Void> sessionDestroy(String session, QueryParams queryParams) {
     return this.retryTemplate.execute(context -> {
-      log.debug("lansheng228: >>> function sessionDestroy => session: {} === queryParams: {}  <<<", session, queryParams);
+      log.debug("spring cloud consul cluster: >>> function sessionDestroy => session: {} === queryParams: {}  <<<", session, queryParams);
 
       return getRetryConsulClient(context).sessionDestroy(session, queryParams);
     });
@@ -278,7 +245,8 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   @Override
   public Response<Void> sessionDestroy(String session, QueryParams queryParams, String token) {
     return this.retryTemplate.execute(context -> {
-      log.debug("lansheng228: >>> function sessionDestroy => session: {} === queryParams: {}  === token: {} <<<", session, queryParams, token);
+      log.debug("spring cloud consul cluster: >>> function sessionDestroy => session: {} === queryParams: {}  === token: {} <<<", session,
+          queryParams, token);
 
       return getRetryConsulClient(context).sessionDestroy(session, queryParams, token);
     });
@@ -288,7 +256,8 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   public Response<Session> getSessionInfo(String session, QueryParams queryParams) {
     return this.retryTemplate.execute(context -> {
       Response<Session> sessionInfo = getRetryConsulClient(context).getSessionInfo(session, queryParams);
-      log.debug("lansheng228: >>> function getSessionInfo => session: {} === queryParams: {}  === sessionInfo: {} <<<", session, queryParams,
+      log.debug("spring cloud consul cluster: >>> function getSessionInfo => session: {} === queryParams: {}  === sessionInfo: {} <<<", session,
+          queryParams,
           sessionInfo);
 
       return sessionInfo;
@@ -299,7 +268,8 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   public Response<Session> getSessionInfo(String session, QueryParams queryParams, String token) {
     return this.retryTemplate.execute(context -> {
       Response<Session> sessionInfo = getRetryConsulClient(context).getSessionInfo(session, queryParams, token);
-      log.debug("lansheng228: >>> function getSessionInfo => session: {} === queryParams: {}  === sessionInfo: {} <<<", session, queryParams,
+      log.debug("spring cloud consul cluster: >>> function getSessionInfo => session: {} === queryParams: {}  === sessionInfo: {} <<<", session,
+          queryParams,
           sessionInfo);
 
       return sessionInfo;
@@ -310,7 +280,8 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   public Response<List<Session>> getSessionNode(String node, QueryParams queryParams) {
     return this.retryTemplate.execute(context -> {
       Response<List<Session>> sessionNode = getRetryConsulClient(context).getSessionNode(node, queryParams);
-      log.debug("lansheng228: >>> function getSessionNode => node: {} === queryParams: {}  === sessionNode: {} <<<", node, queryParams, sessionNode);
+      log.debug("spring cloud consul cluster: >>> function getSessionNode => node: {} === queryParams: {}  === sessionNode: {} <<<", node,
+          queryParams, sessionNode);
 
       return sessionNode;
     });
@@ -321,7 +292,8 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     return this.retryTemplate.execute(context -> {
       Response<List<Session>> sessionNode = getRetryConsulClient(context).getSessionNode(node,
           queryParams, token);
-      log.debug("lansheng228: >>> function getSessionNode => node: {} === queryParams: {}  === token: {}  === sessionNode: {} <<<", node, queryParams,
+      log.debug("spring cloud consul cluster: >>> function getSessionNode => node: {} === queryParams: {}  === token: {}  === sessionNode: {} <<<",
+          node, queryParams,
           token, sessionNode);
 
       return sessionNode;
@@ -332,7 +304,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   public Response<List<Session>> getSessionList(QueryParams queryParams) {
     return this.retryTemplate.execute(context -> {
       Response<List<Session>> sessionList = getRetryConsulClient(context).getSessionList(queryParams);
-      log.debug("lansheng228: >>> function getSessionList => queryParams: {}   === sessionList: {} <<<", queryParams, sessionList);
+      log.debug("spring cloud consul cluster: >>> function getSessionList => queryParams: {}   === sessionList: {} <<<", queryParams, sessionList);
 
       return sessionList;
     });
@@ -342,7 +314,8 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   public Response<List<Session>> getSessionList(QueryParams queryParams, String token) {
     return this.retryTemplate.execute(context -> {
       Response<List<Session>> sessionList = getRetryConsulClient(context).getSessionList(queryParams, token);
-      log.debug("lansheng228: >>> function getSessionList => queryParams: {}   === token: {} === sessionList: {} <<<", queryParams, token,
+      log.debug("spring cloud consul cluster: >>> function getSessionList => queryParams: {}   === token: {} === sessionList: {} <<<", queryParams,
+          token,
           sessionList);
 
       return sessionList;
@@ -354,7 +327,8 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     return this.retryTemplate.execute(context -> {
       Response<Session> renewSession = getRetryConsulClient(context).renewSession(session,
           queryParams);
-      log.debug("lansheng228: >>> function renewSession => session: {}   ===  queryParams: {}   === renewSession: {} <<<", session, queryParams,
+      log.debug("spring cloud consul cluster: >>> function renewSession => session: {}   ===  queryParams: {}   === renewSession: {} <<<", session,
+          queryParams,
           renewSession);
 
       return renewSession;
@@ -366,7 +340,9 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     return this.retryTemplate.execute(context -> {
       Response<Session> renewSession = getRetryConsulClient(context).renewSession(session,
           queryParams, token);
-      log.debug("lansheng228: >>> function renewSession => session: {}   ===  queryParams: {}   === token: {} === renewSession: {} <<<", session,
+      log.debug(
+          "spring cloud consul cluster: >>> function renewSession => session: {}   ===  queryParams: {}   === token: {} === renewSession: {} <<<",
+          session,
           queryParams, token, renewSession);
 
       return renewSession;
@@ -378,7 +354,8 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     return this.retryTemplate.execute(context -> {
       Response<QueryExecution> queryExecution = getRetryConsulClient(context).executePreparedQuery(uuid,
           queryParams);
-      log.debug("lansheng228: >>> function executePreparedQuery => uuid: {}   ===  queryParams: {}   === queryExecution: {}  <<<", uuid,
+      log.debug("spring cloud consul cluster: >>> function executePreparedQuery => uuid: {}   ===  queryParams: {}   === queryExecution: {}  <<<",
+          uuid,
           queryParams, queryExecution);
 
       return queryExecution;
@@ -389,7 +366,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   public Response<GetValue> getKVValue(String key) {
     return this.retryTemplate.execute(context -> {
       Response<GetValue> value = getRetryConsulClient(context).getKVValue(key);
-      log.debug("lansheng228: >>> function getKVValue => key: {}   ===  value: {} <<<", key, value);
+      log.debug("spring cloud consul cluster: >>> function getKVValue => key: {}   ===  value: {} <<<", key, value);
 
       return value;
     });
@@ -399,7 +376,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   public Response<GetValue> getKVValue(String key, String token) {
     return this.retryTemplate.execute(context -> {
       Response<GetValue> value = getRetryConsulClient(context).getKVValue(key, token);
-      log.debug("lansheng228: >>> function getKVValue => key: {}   ===  token: {}  ===  value: {} <<<", key, token, value);
+      log.debug("spring cloud consul cluster: >>> function getKVValue => key: {}   ===  token: {}  ===  value: {} <<<", key, token, value);
 
       return value;
     });
@@ -409,7 +386,8 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   public Response<GetValue> getKVValue(String key, QueryParams queryParams) {
     return this.retryTemplate.execute(context -> {
       Response<GetValue> value = getRetryConsulClient(context).getKVValue(key, queryParams);
-      log.debug("lansheng228: >>> function getKVValue => key: {}   ===  queryParams: {}  ===  value: {} <<<", key, queryParams, value);
+      log.debug("spring cloud consul cluster: >>> function getKVValue => key: {}   ===  queryParams: {}  ===  value: {} <<<", key, queryParams,
+          value);
 
       return value;
     });
@@ -420,7 +398,8 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     return this.retryTemplate.execute(context -> {
       Response<GetValue> value = getRetryConsulClient(context).getKVValue(key, token,
           queryParams);
-      log.debug("lansheng228: >>> function getKVValue => key: {}   ===  token: {}  ===  queryParams: {}  ===  value: {} <<<", key, token, queryParams,
+      log.debug("spring cloud consul cluster: >>> function getKVValue => key: {}   ===  token: {}  ===  queryParams: {}  ===  value: {} <<<", key,
+          token, queryParams,
           value);
 
       return value;
@@ -431,7 +410,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   public Response<GetBinaryValue> getKVBinaryValue(String key) {
     return this.retryTemplate.execute(context -> {
       Response<GetBinaryValue> binaryValue = getRetryConsulClient(context).getKVBinaryValue(key);
-      log.debug("lansheng228: >>> function getKVBinaryValue => key: {}  ===  binaryValue: {} <<<", key, binaryValue);
+      log.debug("spring cloud consul cluster: >>> function getKVBinaryValue => key: {}  ===  binaryValue: {} <<<", key, binaryValue);
 
       return binaryValue;
     });
@@ -441,7 +420,8 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   public Response<GetBinaryValue> getKVBinaryValue(String key, String token) {
     return this.retryTemplate.execute(context -> {
       Response<GetBinaryValue> binaryValue = getRetryConsulClient(context).getKVBinaryValue(key, token);
-      log.debug("lansheng228: >>> function getKVBinaryValue => key: {}  ===  token: {}  ===  binaryValue: {} <<<", key, token, binaryValue);
+      log.debug("spring cloud consul cluster: >>> function getKVBinaryValue => key: {}  ===  token: {}  ===  binaryValue: {} <<<", key, token,
+          binaryValue);
 
       return binaryValue;
     });
@@ -452,7 +432,8 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     return this.retryTemplate.execute(context -> {
       Response<GetBinaryValue> binaryValue = getRetryConsulClient(context).getKVBinaryValue(key,
           queryParams);
-      log.debug("lansheng228: >>> function getKVBinaryValue => key: {}  ===  queryParams: {}  ===  binaryValue: {} <<<", key, queryParams,
+      log.debug("spring cloud consul cluster: >>> function getKVBinaryValue => key: {}  ===  queryParams: {}  ===  binaryValue: {} <<<", key,
+          queryParams,
           binaryValue);
 
       return binaryValue;
@@ -464,7 +445,9 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     return this.retryTemplate.execute(context -> {
       Response<GetBinaryValue> binaryValue = getRetryConsulClient(context).getKVBinaryValue(key, token,
           queryParams);
-      log.debug("lansheng228: >>> function getKVBinaryValue => key: {}  ===  token: {}  ===  queryParams: {}  ===  binaryValue: {} <<<", key, token,
+      log.debug(
+          "spring cloud consul cluster: >>> function getKVBinaryValue => key: {}  ===  token: {}  ===  queryParams: {}  ===  binaryValue: {} <<<",
+          key, token,
           queryParams, binaryValue);
 
       return binaryValue;
@@ -475,7 +458,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   public Response<List<GetValue>> getKVValues(String keyPrefix) {
     return this.retryTemplate.execute(context -> {
       Response<List<GetValue>> valueList = getRetryConsulClient(context).getKVValues(keyPrefix);
-      log.debug("lansheng228: >>> function getKVValues => keyPrefix: {}  ===  valueList: {} <<<", keyPrefix, valueList);
+      log.debug("spring cloud consul cluster: >>> function getKVValues => keyPrefix: {}  ===  valueList: {} <<<", keyPrefix, valueList);
 
       return valueList;
     });
@@ -486,7 +469,8 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     return this.retryTemplate.execute(context -> {
       Response<List<GetValue>> valueList = getRetryConsulClient(context).getKVValues(keyPrefix,
           token);
-      log.debug("lansheng228: >>> function getKVValues => keyPrefix: {}  ===  token: {}  ===  valueList: {} <<<", keyPrefix, token, valueList);
+      log.debug("spring cloud consul cluster: >>> function getKVValues => keyPrefix: {}  ===  token: {}  ===  valueList: {} <<<", keyPrefix, token,
+          valueList);
 
       return valueList;
     });
@@ -497,7 +481,8 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     return this.retryTemplate.execute(context -> {
       Response<List<GetValue>> valueList = getRetryConsulClient(context).getKVValues(keyPrefix,
           queryParams);
-      log.debug("lansheng228: >>> function getKVValues => keyPrefix: {}  ===  queryParams: {}  ===  valueList: {} <<<", keyPrefix, queryParams,
+      log.debug("spring cloud consul cluster: >>> function getKVValues => keyPrefix: {}  ===  queryParams: {}  ===  valueList: {} <<<", keyPrefix,
+          queryParams,
           valueList);
 
       return valueList;
@@ -509,7 +494,9 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     return this.retryTemplate.execute(context -> {
       Response<List<GetValue>> valueList = getRetryConsulClient(context).getKVValues(keyPrefix, token,
           queryParams);
-      log.debug("lansheng228: >>> function getKVValues => keyPrefix: {}  ===  token: {}  ===  queryParams: {}  ===  valueList: {} <<<", keyPrefix,
+      log.debug(
+          "spring cloud consul cluster: >>> function getKVValues => keyPrefix: {}  ===  token: {}  ===  queryParams: {}  ===  valueList: {} <<<",
+          keyPrefix,
           token, queryParams, valueList);
 
       return valueList;
@@ -520,7 +507,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   public Response<List<GetBinaryValue>> getKVBinaryValues(String keyPrefix) {
     return this.retryTemplate.execute(context -> {
       Response<List<GetBinaryValue>> binaryValueList = getRetryConsulClient(context).getKVBinaryValues(keyPrefix);
-      log.debug("lansheng228: >>> function getKVBinaryValues => keyPrefix: {}  ===  binaryValueList: {} <<<", keyPrefix,
+      log.debug("spring cloud consul cluster: >>> function getKVBinaryValues => keyPrefix: {}  ===  binaryValueList: {} <<<", keyPrefix,
           binaryValueList);
 
       return binaryValueList;
@@ -531,7 +518,8 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   public Response<List<GetBinaryValue>> getKVBinaryValues(String keyPrefix, String token) {
     return this.retryTemplate.execute(context -> {
       Response<List<GetBinaryValue>> binaryValueList = getRetryConsulClient(context).getKVBinaryValues(keyPrefix, token);
-      log.debug("lansheng228: >>> function getKVBinaryValues => keyPrefix: {}  ===  token: {}  ===  binaryValueList: {} <<<", keyPrefix, token,
+      log.debug("spring cloud consul cluster: >>> function getKVBinaryValues => keyPrefix: {}  ===  token: {}  ===  binaryValueList: {} <<<",
+          keyPrefix, token,
           binaryValueList);
 
       return binaryValueList;
@@ -543,7 +531,8 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     return this.retryTemplate.execute(context -> {
       Response<List<GetBinaryValue>> binaryValueList = getRetryConsulClient(context).getKVBinaryValues(keyPrefix,
           queryParams);
-      log.debug("lansheng228: >>> function getKVBinaryValues => keyPrefix: {}  ===  queryParams: {}  ===  binaryValueList: {} <<<", keyPrefix,
+      log.debug("spring cloud consul cluster: >>> function getKVBinaryValues => keyPrefix: {}  ===  queryParams: {}  ===  binaryValueList: {} <<<",
+          keyPrefix,
           queryParams,
           binaryValueList);
 
@@ -555,7 +544,8 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   public Response<List<GetBinaryValue>> getKVBinaryValues(String keyPrefix, String token, QueryParams queryParams) {
     return this.retryTemplate.execute(context -> {
       Response<List<GetBinaryValue>> binaryValueList = getRetryConsulClient(context).getKVBinaryValues(keyPrefix, token, queryParams);
-      log.debug("lansheng228: >>> function getKVBinaryValues => keyPrefix: {}  ===  token: {}  ===  queryParams: {}  ===  binaryValueList: {} <<<",
+      log.debug(
+          "spring cloud consul cluster: >>> function getKVBinaryValues => keyPrefix: {}  ===  token: {}  ===  queryParams: {}  ===  binaryValueList: {} <<<",
           keyPrefix, token, queryParams, binaryValueList);
 
       return binaryValueList;
@@ -566,7 +556,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   public Response<List<String>> getKVKeysOnly(String keyPrefix) {
     return this.retryTemplate.execute(context -> {
       Response<List<String>> keyList = getRetryConsulClient(context).getKVKeysOnly(keyPrefix);
-      log.debug("lansheng228: >>> function getKVKeysOnly => keyPrefix: {}  ===  keyList: {} <<<",
+      log.debug("spring cloud consul cluster: >>> function getKVKeysOnly => keyPrefix: {}  ===  keyList: {} <<<",
           keyPrefix, keyList);
 
       return keyList;
@@ -578,7 +568,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     return this.retryTemplate.execute(context -> {
       Response<List<String>> keyList = getRetryConsulClient(context).getKVKeysOnly(keyPrefix,
           separator, token);
-      log.debug("lansheng228: >>> function getKVKeysOnly => keyPrefix: {}  ===  separator: {}  ===  token: {}  ===  keyList: {} <<<",
+      log.debug("spring cloud consul cluster: >>> function getKVKeysOnly => keyPrefix: {}  ===  separator: {}  ===  token: {}  ===  keyList: {} <<<",
           keyPrefix, separator, token, keyList);
 
       return keyList;
@@ -589,7 +579,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   public Response<List<String>> getKVKeysOnly(String keyPrefix, QueryParams queryParams) {
     return this.retryTemplate.execute(context -> {
       Response<List<String>> keyList = getRetryConsulClient(context).getKVKeysOnly(keyPrefix, queryParams);
-      log.debug("lansheng228: >>> function getKVKeysOnly => keyPrefix: {}  ===  queryParams: {} ===  keyList: {} <<<",
+      log.debug("spring cloud consul cluster: >>> function getKVKeysOnly => keyPrefix: {}  ===  queryParams: {} ===  keyList: {} <<<",
           keyPrefix, queryParams, keyList);
 
       return keyList;
@@ -602,7 +592,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
       Response<List<String>> keyList = getRetryConsulClient(context).getKVKeysOnly(keyPrefix,
           separator, token, queryParams);
       log.debug(
-          "lansheng228: >>> function getKVKeysOnly => keyPrefix: {}  ===  separator: {}  ===  token: {}  ===  queryParams: {} ===  keyList: {} <<<",
+          "spring cloud consul cluster: >>> function getKVKeysOnly => keyPrefix: {}  ===  separator: {}  ===  token: {}  ===  queryParams: {} ===  keyList: {} <<<",
           keyPrefix, separator, token, queryParams, keyList);
 
       return keyList;
@@ -614,7 +604,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     return this.retryTemplate.execute(context -> {
       Response<Boolean> result = getRetryConsulClient(context).setKVValue(key, value);
       log.debug(
-          "lansheng228: >>> function setKVValue => key: {}  ===  value: {}  ===  result: {} <<<",
+          "spring cloud consul cluster: >>> function setKVValue => key: {}  ===  value: {}  ===  result: {} <<<",
           key, value, result);
 
       return result;
@@ -626,7 +616,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     return this.retryTemplate.execute(context -> {
       Response<Boolean> result = getRetryConsulClient(context).setKVValue(key, value, putParams);
       log.debug(
-          "lansheng228: >>> function setKVValue => key: {}  ===  value: {}  ===  putParams: {} ===  result: {} <<<",
+          "spring cloud consul cluster: >>> function setKVValue => key: {}  ===  value: {}  ===  putParams: {} ===  result: {} <<<",
           key, value, putParams, result);
 
       return result;
@@ -640,7 +630,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
       Response<Boolean> result = getRetryConsulClient(context).setKVValue(key, value, token,
           putParams);
       log.debug(
-          "lansheng228: >>> function setKVValue => key: {}  ===  value: {}  ===  token: {}  ===  putParams: {} ===  result: {} <<<",
+          "spring cloud consul cluster: >>> function setKVValue => key: {}  ===  value: {}  ===  token: {}  ===  putParams: {} ===  result: {} <<<",
           key, value, token, putParams, result);
 
       return result;
@@ -652,7 +642,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     return this.retryTemplate.execute(context -> {
       Response<Boolean> result = getRetryConsulClient(context).setKVValue(key, value, queryParams);
       log.debug(
-          "lansheng228: >>> function setKVValue => key: {}  ===  value: {}  ===  queryParams: {} ===  result: {} <<<",
+          "spring cloud consul cluster: >>> function setKVValue => key: {}  ===  value: {}  ===  queryParams: {} ===  result: {} <<<",
           key, value, queryParams, result);
 
       return result;
@@ -664,7 +654,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     return this.retryTemplate.execute(context -> {
       Response<Boolean> result = getRetryConsulClient(context).setKVValue(key, value, putParams, queryParams);
       log.debug(
-          "lansheng228: >>> function setKVValue => key: {}  ===  value: {}  ===  putParams: {}  ===  queryParams: {} ===  result: {} <<<",
+          "spring cloud consul cluster: >>> function setKVValue => key: {}  ===  value: {}  ===  putParams: {}  ===  queryParams: {} ===  result: {} <<<",
           key, value, putParams, queryParams, result);
 
       return result;
@@ -678,7 +668,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
       Response<Boolean> result = getRetryConsulClient(context).setKVValue(key, value, token,
           putParams, queryParams);
       log.debug(
-          "lansheng228: >>> function setKVValue => key: {}  ===  value: {}  ===  token: {}   ===  putParams: {}  ===  queryParams: {} ===  result: {} <<<",
+          "spring cloud consul cluster: >>> function setKVValue => key: {}  ===  value: {}  ===  token: {}   ===  putParams: {}  ===  queryParams: {} ===  result: {} <<<",
           key, value, token, putParams, queryParams, result);
 
       return result;
@@ -690,7 +680,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     return this.retryTemplate.execute(context -> {
       Response<Boolean> result = getRetryConsulClient(context).setKVBinaryValue(key, value);
       log.debug(
-          "lansheng228: >>> function setKVBinaryValue => key: {}  ===  value: {}  ===  result: {} <<<",
+          "spring cloud consul cluster: >>> function setKVBinaryValue => key: {}  ===  value: {}  ===  result: {} <<<",
           key, value, result);
 
       return result;
@@ -702,7 +692,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     return this.retryTemplate.execute(context -> {
       Response<Boolean> result = getRetryConsulClient(context).setKVBinaryValue(key, value, putParams);
       log.debug(
-          "lansheng228: >>> function setKVBinaryValue => key: {}  ===  value: {}  ===  putParams: {}  ===  result: {} <<<",
+          "spring cloud consul cluster: >>> function setKVBinaryValue => key: {}  ===  value: {}  ===  putParams: {}  ===  result: {} <<<",
           key, value, putParams, result);
 
       return result;
@@ -715,7 +705,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
       Response<Boolean> result = getRetryConsulClient(context).setKVBinaryValue(key, value,
           token, putParams);
       log.debug(
-          "lansheng228: >>> function setKVBinaryValue => key: {}  ===  value: {}  ===  token: {}  ===  putParams: {}  ===  result: {} <<<",
+          "spring cloud consul cluster: >>> function setKVBinaryValue => key: {}  ===  value: {}  ===  token: {}  ===  putParams: {}  ===  result: {} <<<",
           key, value, token, putParams, result);
 
       return result;
@@ -727,7 +717,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     return this.retryTemplate.execute(context -> {
       Response<Boolean> result = getRetryConsulClient(context).setKVBinaryValue(key, value, queryParams);
       log.debug(
-          "lansheng228: >>> function setKVBinaryValue => key: {}  ===  value: {}  ===  queryParams: {}  ===  result: {} <<<",
+          "spring cloud consul cluster: >>> function setKVBinaryValue => key: {}  ===  value: {}  ===  queryParams: {}  ===  result: {} <<<",
           key, value, queryParams, result);
 
       return result;
@@ -739,7 +729,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     return this.retryTemplate.execute(context -> {
       Response<Boolean> result = getRetryConsulClient(context).setKVBinaryValue(key, value, putParams, queryParams);
       log.debug(
-          "lansheng228: >>> function setKVBinaryValue => key: {}  ===  value: {}  ===  putParams: {}   ===  queryParams: {}  ===  result: {} <<<",
+          "spring cloud consul cluster: >>> function setKVBinaryValue => key: {}  ===  value: {}  ===  putParams: {}   ===  queryParams: {}  ===  result: {} <<<",
           key, value, putParams, queryParams, result);
 
       return result;
@@ -753,7 +743,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
       Response<Boolean> result = getRetryConsulClient(context).setKVBinaryValue(key, value,
           token, putParams, queryParams);
       log.debug(
-          "lansheng228: >>> function setKVBinaryValue => key: {}  ===  value: {}  ===  putParams: {}   ===  queryParams: {}  ===  result: {} <<<",
+          "spring cloud consul cluster: >>> function setKVBinaryValue => key: {}  ===  value: {}  ===  putParams: {}   ===  queryParams: {}  ===  result: {} <<<",
           key, value, putParams, queryParams, result);
 
       return result;
@@ -764,7 +754,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   public Response<Void> deleteKVValue(String key) {
     return this.retryTemplate.execute(context -> {
       Response<Void> result = getRetryConsulClient(context).deleteKVValue(key);
-      log.debug("lansheng228: >>> function deleteKVValue => key: {} ===  result: {} <<<", key, result);
+      log.debug("spring cloud consul cluster: >>> function deleteKVValue => key: {} ===  result: {} <<<", key, result);
 
       return result;
     });
@@ -774,7 +764,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   public Response<Void> deleteKVValue(String key, String token) {
     return this.retryTemplate.execute(context -> {
       Response<Void> result = getRetryConsulClient(context).deleteKVValue(key, token);
-      log.debug("lansheng228: >>> function deleteKVValue => key: {}  ===  token: {}  ===  result: {} <<<", key, token, result);
+      log.debug("spring cloud consul cluster: >>> function deleteKVValue => key: {}  ===  token: {}  ===  result: {} <<<", key, token, result);
 
       return result;
     });
@@ -784,7 +774,8 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   public Response<Void> deleteKVValue(String key, QueryParams queryParams) {
     return this.retryTemplate.execute(context -> {
       Response<Void> result = getRetryConsulClient(context).deleteKVValue(key, queryParams);
-      log.debug("lansheng228: >>> function deleteKVValue => key: {}  ===  queryParams: {}  ===  result: {} <<<", key, queryParams, result);
+      log.debug("spring cloud consul cluster: >>> function deleteKVValue => key: {}  ===  queryParams: {}  ===  result: {} <<<", key, queryParams,
+          result);
 
       return result;
     });
@@ -794,7 +785,8 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   public Response<Void> deleteKVValue(String key, String token, QueryParams queryParams) {
     return this.retryTemplate.execute(context -> {
       Response<Void> result = getRetryConsulClient(context).deleteKVValue(key, token, queryParams);
-      log.debug("lansheng228: >>> function deleteKVValue => key: {}  ===  token: {}  ===  queryParams: {}  ===  result: {} <<<", key, token,
+      log.debug("spring cloud consul cluster: >>> function deleteKVValue => key: {}  ===  token: {}  ===  queryParams: {}  ===  result: {} <<<", key,
+          token,
           queryParams, result);
 
       return result;
@@ -805,7 +797,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   public Response<Void> deleteKVValues(String key) {
     return this.retryTemplate.execute(context -> {
       Response<Void> result = getRetryConsulClient(context).deleteKVValues(key);
-      log.debug("lansheng228: >>> function deleteKVValues => key: {}  ===  result: {} <<<", key, result);
+      log.debug("spring cloud consul cluster: >>> function deleteKVValues => key: {}  ===  result: {} <<<", key, result);
 
       return result;
     });
@@ -815,7 +807,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   public Response<Void> deleteKVValues(String key, String token) {
     return this.retryTemplate.execute(context -> {
       Response<Void> result = getRetryConsulClient(context).deleteKVValues(key, token);
-      log.debug("lansheng228: >>> function deleteKVValues => key: {}  ===  token: {}  ===  result: {} <<<", key, token, result);
+      log.debug("spring cloud consul cluster: >>> function deleteKVValues => key: {}  ===  token: {}  ===  result: {} <<<", key, token, result);
 
       return result;
     });
@@ -825,7 +817,8 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   public Response<Void> deleteKVValues(String key, QueryParams queryParams) {
     return this.retryTemplate.execute(context -> {
       Response<Void> result = getRetryConsulClient(context).deleteKVValues(key, queryParams);
-      log.debug("lansheng228: >>> function deleteKVValues => key: {}  ===  queryParams: {}  ===  result: {} <<<", key, queryParams, result);
+      log.debug("spring cloud consul cluster: >>> function deleteKVValues => key: {}  ===  queryParams: {}  ===  result: {} <<<", key, queryParams,
+          result);
 
       return result;
     });
@@ -835,7 +828,8 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   public Response<Void> deleteKVValues(String key, String token, QueryParams queryParams) {
     return this.retryTemplate.execute(context -> {
       Response<Void> result = getRetryConsulClient(context).deleteKVValues(key, token, queryParams);
-      log.debug("lansheng228: >>> function deleteKVValues => key: {}  ===  token: {}  ===  queryParams: {}  ===  result: {} <<<", key, token,
+      log.debug("spring cloud consul cluster: >>> function deleteKVValues => key: {}  ===  token: {}  ===  queryParams: {}  ===  result: {} <<<", key,
+          token,
           queryParams, result);
 
       return result;
@@ -846,7 +840,8 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   public Response<List<Check>> getHealthChecksForNode(String nodeName, QueryParams queryParams) {
     return this.retryTemplate.execute(context -> {
       Response<List<Check>> checkList = getRetryConsulClient(context).getHealthChecksForNode(nodeName, queryParams);
-      log.debug("lansheng228: >>> function getHealthChecksForNode => nodeName: {}  ===  queryParams: {}  ===  checkList: {} <<<", nodeName,
+      log.debug("spring cloud consul cluster: >>> function getHealthChecksForNode => nodeName: {}  ===  queryParams: {}  ===  checkList: {} <<<",
+          nodeName,
           queryParams, checkList);
 
       return checkList;
@@ -857,7 +852,9 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   public Response<List<Check>> getHealthChecksForService(String serviceName, QueryParams queryParams) {
     return this.retryTemplate.execute(context -> {
       Response<List<Check>> checkList = getRetryConsulClient(context).getHealthChecksForService(serviceName, queryParams);
-      log.debug("lansheng228: >>> function getHealthChecksForService => serviceName: {}  ===  queryParams: {}  ===  checkList: {} <<<", serviceName,
+      log.debug(
+          "spring cloud consul cluster: >>> function getHealthChecksForService => serviceName: {}  ===  queryParams: {}  ===  checkList: {} <<<",
+          serviceName,
           queryParams, checkList);
 
       return checkList;
@@ -871,7 +868,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
       Response<List<HealthService>> healthServiceList = getRetryConsulClient(context)
           .getHealthServices(serviceName, onlyPassing, queryParams);
       log.debug(
-          "lansheng228: >>> function getHealthServices => serviceName: {}  ===  onlyPassing: {}  ===  queryParams: {}  ===  healthServiceList: {} <<<",
+          "spring cloud consul cluster: >>> function getHealthServices => serviceName: {}  ===  onlyPassing: {}  ===  queryParams: {}  ===  healthServiceList: {} <<<",
           serviceName, onlyPassing, queryParams, healthServiceList);
 
       return healthServiceList;
@@ -885,7 +882,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
       Response<List<HealthService>> healthServiceList = getRetryConsulClient(context).getHealthServices(
           serviceName, tag, onlyPassing, queryParams);
       log.debug(
-          "lansheng228: >>> function getHealthServices => serviceName: {}  ===  tag: {}  ===  onlyPassing: {}  ===  queryParams: {}  ===  healthServiceList: {} <<<",
+          "spring cloud consul cluster: >>> function getHealthServices => serviceName: {}  ===  tag: {}  ===  onlyPassing: {}  ===  queryParams: {}  ===  healthServiceList: {} <<<",
           serviceName, tag, onlyPassing, queryParams, healthServiceList);
 
       return healthServiceList;
@@ -899,7 +896,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
       Response<List<HealthService>> healthServiceList = getRetryConsulClient(context).getHealthServices(
           serviceName, onlyPassing, queryParams, token);
       log.debug(
-          "lansheng228: >>> function getHealthServices => serviceName: {}  ===  onlyPassing: {}  ===  queryParams: {}  ===  token: {}  ===  healthServiceList: {} <<<",
+          "spring cloud consul cluster: >>> function getHealthServices => serviceName: {}  ===  onlyPassing: {}  ===  queryParams: {}  ===  token: {}  ===  healthServiceList: {} <<<",
           serviceName, onlyPassing, queryParams, token, healthServiceList);
 
       return healthServiceList;
@@ -913,7 +910,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
       Response<List<HealthService>> healthServiceList = getRetryConsulClient(context).getHealthServices(
           serviceName, tag, onlyPassing, queryParams, token);
       log.debug(
-          "lansheng228: >>> function getHealthServices => serviceName: {}  ===  tag: {}  ===  onlyPassing: {}  ===  queryParams: {}  ===  token: {}  ===  healthServiceList: {} <<<",
+          "spring cloud consul cluster: >>> function getHealthServices => serviceName: {}  ===  tag: {}  ===  onlyPassing: {}  ===  queryParams: {}  ===  token: {}  ===  healthServiceList: {} <<<",
           serviceName, tag, onlyPassing, queryParams, token, healthServiceList);
 
       return healthServiceList;
@@ -925,7 +922,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     return this.retryTemplate.execute(context -> {
       Response<List<Check>> checkList = getRetryConsulClient(context).getHealthChecksState(queryParams);
       log.debug(
-          "lansheng228: >>> function getHealthChecksState =>  queryParams: {}  ===  checkList: {} <<<",
+          "spring cloud consul cluster: >>> function getHealthChecksState =>  queryParams: {}  ===  checkList: {} <<<",
           queryParams, checkList);
 
       return checkList;
@@ -937,7 +934,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     return this.retryTemplate.execute(context -> {
       Response<List<Check>> checkList = getRetryConsulClient(context).getHealthChecksState(checkStatus, queryParams);
       log.debug(
-          "lansheng228: >>> function getHealthChecksState =>  checkStatus: {}  ===  queryParams: {}  ===  checkList: {} <<<",
+          "spring cloud consul cluster: >>> function getHealthChecksState =>  checkStatus: {}  ===  queryParams: {}  ===  checkList: {} <<<",
           checkStatus, queryParams, checkList);
 
       return checkList;
@@ -949,7 +946,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     return this.retryTemplate.execute(context -> {
       Response<Event> eventFire = getRetryConsulClient(context).eventFire(event, payload, eventParams, queryParams);
       log.debug(
-          "lansheng228: >>> function eventFire =>  event: {}  ===  payload: {}  ===  eventParams: {} ===  queryParams: {}  ===  eventFire: {} <<<",
+          "spring cloud consul cluster: >>> function eventFire =>  event: {}  ===  payload: {}  ===  eventParams: {} ===  queryParams: {}  ===  eventFire: {} <<<",
           event, payload, eventParams, queryParams, eventFire);
 
       return eventFire;
@@ -961,7 +958,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     return this.retryTemplate.execute(context -> {
       Response<List<Event>> eventList = getRetryConsulClient(context).eventList(queryParams);
       log.debug(
-          "lansheng228: >>> function eventList =>  queryParams: {}  ===  eventList: {} <<<",
+          "spring cloud consul cluster: >>> function eventList =>  queryParams: {}  ===  eventList: {} <<<",
           queryParams, eventList);
 
       return eventList;
@@ -973,7 +970,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     return this.retryTemplate.execute(context -> {
       Response<List<Event>> eventList = getRetryConsulClient(context).eventList(event, queryParams);
       log.debug(
-          "lansheng228: >>> function eventList =>  event: {}  ===  queryParams: {}  ===  eventList: {} <<<",
+          "spring cloud consul cluster: >>> function eventList =>  event: {}  ===  queryParams: {}  ===  eventList: {} <<<",
           event, queryParams, eventList);
 
       return eventList;
@@ -985,7 +982,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     return this.retryTemplate.execute(context -> {
       Response<List<Datacenter>> datacenterList = getRetryConsulClient(context).getDatacenters();
       log.debug(
-          "lansheng228: >>> function getDatacenters =>  datacenterList: {} <<<",
+          "spring cloud consul cluster: >>> function getDatacenters =>  datacenterList: {} <<<",
           datacenterList);
 
       return datacenterList;
@@ -997,7 +994,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     return this.retryTemplate.execute(context -> {
       Response<List<Node>> nodeList = getRetryConsulClient(context).getNodes(queryParams);
       log.debug(
-          "lansheng228: >>> function getNodes =>  queryParams: {}  === nodeList: {} <<<",
+          "spring cloud consul cluster: >>> function getNodes =>  queryParams: {}  === nodeList: {} <<<",
           queryParams, nodeList);
 
       return nodeList;
@@ -1009,7 +1006,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     return this.retryTemplate.execute(context -> {
       Response<Void> result = getRetryConsulClient(context).catalogRegister(catalogRegistration);
       log.debug(
-          "lansheng228: >>> function catalogRegister =>  catalogRegistration: {}  === result: {} <<<",
+          "spring cloud consul cluster: >>> function catalogRegister =>  catalogRegistration: {}  === result: {} <<<",
           catalogRegistration, result);
 
       return result;
@@ -1021,7 +1018,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     return this.retryTemplate.execute(context -> {
       Response<Void> result = getRetryConsulClient(context).catalogRegister(catalogRegistration, token);
       log.debug(
-          "lansheng228: >>> function catalogRegister =>  catalogRegistration: {}  === token: {}  === result: {} <<<",
+          "spring cloud consul cluster: >>> function catalogRegister =>  catalogRegistration: {}  === token: {}  === result: {} <<<",
           catalogRegistration, token, result);
 
       return result;
@@ -1033,7 +1030,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     return this.retryTemplate.execute(context -> {
       Response<Void> result = getRetryConsulClient(context).catalogDeregister(catalogDeregistration);
       log.debug(
-          "lansheng228: >>> function catalogDeregister =>  catalogDeregistration: {}  === result: {} <<<",
+          "spring cloud consul cluster: >>> function catalogDeregister =>  catalogDeregistration: {}  === result: {} <<<",
           catalogDeregistration, result);
 
       return result;
@@ -1045,7 +1042,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     return this.retryTemplate.execute(context -> {
       Response<List<String>> catalogDatacenterList = getRetryConsulClient(context).getCatalogDatacenters();
       log.debug(
-          "lansheng228: >>> function getCatalogDatacenters =>  catalogDatacenterList: {} <<<",
+          "spring cloud consul cluster: >>> function getCatalogDatacenters =>  catalogDatacenterList: {} <<<",
           catalogDatacenterList);
 
       return catalogDatacenterList;
@@ -1058,7 +1055,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
       Response<List<com.ecwid.consul.v1.catalog.model.Node>> catalogNodeList = getRetryConsulClient(context)
           .getCatalogNodes(queryParams);
       log.debug(
-          "lansheng228: >>> function getCatalogNodes =>  queryParams: {}  ===  catalogNodeList: {} <<<",
+          "spring cloud consul cluster: >>> function getCatalogNodes =>  queryParams: {}  ===  catalogNodeList: {} <<<",
           queryParams, catalogNodeList);
 
       return catalogNodeList;
@@ -1071,7 +1068,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
       Response<Map<String, List<String>>> catalogServiceMap = getRetryConsulClient(context)
           .getCatalogServices(queryParams);
       log.debug(
-          "lansheng228: >>> function getCatalogServices =>  queryParams: {}  ===  catalogServiceMap: {} <<<",
+          "spring cloud consul cluster: >>> function getCatalogServices =>  queryParams: {}  ===  catalogServiceMap: {} <<<",
           queryParams, catalogServiceMap);
 
       return catalogServiceMap;
@@ -1084,7 +1081,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
       Response<Map<String, List<String>>> catalogServiceMap = getRetryConsulClient(context)
           .getCatalogServices(queryParams, token);
       log.debug(
-          "lansheng228: >>> function getCatalogServices =>  queryParams: {}  ===  token: {}  ===  catalogServiceMap: {} <<<",
+          "spring cloud consul cluster: >>> function getCatalogServices =>  queryParams: {}  ===  token: {}  ===  catalogServiceMap: {} <<<",
           queryParams, token, catalogServiceMap);
 
       return catalogServiceMap;
@@ -1097,7 +1094,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
       Response<List<CatalogService>> catalogServiceList = getRetryConsulClient(context)
           .getCatalogService(serviceName, queryParams);
       log.debug(
-          "lansheng228: >>> function getCatalogService =>  serviceName: {}  ===  queryParams: {}  ===  catalogServiceList: {} <<<",
+          "spring cloud consul cluster: >>> function getCatalogService =>  serviceName: {}  ===  queryParams: {}  ===  catalogServiceList: {} <<<",
           serviceName, queryParams, catalogServiceList);
 
       return catalogServiceList;
@@ -1111,7 +1108,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
       Response<List<CatalogService>> catalogServiceList = getRetryConsulClient(context)
           .getCatalogService(serviceName, tag, queryParams);
       log.debug(
-          "lansheng228: >>> function getCatalogService =>  serviceName: {}  ===  tag: {}  ===  queryParams: {}  ===  catalogServiceList: {} <<<",
+          "spring cloud consul cluster: >>> function getCatalogService =>  serviceName: {}  ===  tag: {}  ===  queryParams: {}  ===  catalogServiceList: {} <<<",
           serviceName, tag, queryParams, catalogServiceList);
 
       return catalogServiceList;
@@ -1125,7 +1122,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
       Response<List<CatalogService>> catalogServiceList = getRetryConsulClient(context)
           .getCatalogService(serviceName, queryParams, token);
       log.debug(
-          "lansheng228: >>> function getCatalogService =>  serviceName: {}  ===  queryParams: {}  ===  token: {}  ===  catalogServiceList: {} <<<",
+          "spring cloud consul cluster: >>> function getCatalogService =>  serviceName: {}  ===  queryParams: {}  ===  token: {}  ===  catalogServiceList: {} <<<",
           serviceName, queryParams, token, catalogServiceList);
 
       return catalogServiceList;
@@ -1139,7 +1136,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
       Response<List<CatalogService>> catalogServiceList = getRetryConsulClient(context)
           .getCatalogService(serviceName, tag, queryParams, token);
       log.debug(
-          "lansheng228: >>> function getCatalogService =>  serviceName: {}  ===  tag: {} ===  queryParams: {}  ===  token: {}  ===  catalogServiceList: {} <<<",
+          "spring cloud consul cluster: >>> function getCatalogService =>  serviceName: {}  ===  tag: {} ===  queryParams: {}  ===  token: {}  ===  catalogServiceList: {} <<<",
           serviceName, tag, queryParams, token, catalogServiceList);
 
       return catalogServiceList;
@@ -1151,7 +1148,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     return this.retryTemplate.execute(context -> {
       Response<CatalogNode> catalogNode = getRetryConsulClient(context).getCatalogNode(nodeName, queryParams);
       log.debug(
-          "lansheng228: >>> function getCatalogNode =>  nodeName: {}  ===  queryParams: {}  ===  catalogNode: {} <<<",
+          "spring cloud consul cluster: >>> function getCatalogNode =>  nodeName: {}  ===  queryParams: {}  ===  catalogNode: {} <<<",
           nodeName, queryParams, catalogNode);
 
       return catalogNode;
@@ -1164,7 +1161,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
       Response<Map<String, com.ecwid.consul.v1.agent.model.Check>> checkList = getRetryConsulClient(context)
           .getAgentChecks();
       log.debug(
-          "lansheng228: >>> function getAgentChecks =>  checkList: {} <<<", checkList);
+          "spring cloud consul cluster: >>> function getAgentChecks =>  checkList: {} <<<", checkList);
 
       return checkList;
     });
@@ -1175,7 +1172,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     return this.retryTemplate.execute(context -> {
       Response<Map<String, Service>> agentServiceMap = getRetryConsulClient(context).getAgentServices();
       log.debug(
-          "lansheng228: >>> function getAgentServices =>  agentServiceMap: {} <<<", agentServiceMap);
+          "spring cloud consul cluster: >>> function getAgentServices =>  agentServiceMap: {} <<<", agentServiceMap);
 
       return agentServiceMap;
     });
@@ -1186,7 +1183,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     return this.retryTemplate.execute(context -> {
       Response<List<Member>> agentMemberList = getRetryConsulClient(context).getAgentMembers();
       log.debug(
-          "lansheng228: >>> function getAgentMembers =>  agentMemberList: {} <<<", agentMemberList);
+          "spring cloud consul cluster: >>> function getAgentMembers =>  agentMemberList: {} <<<", agentMemberList);
 
       return agentMemberList;
     });
@@ -1197,7 +1194,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     return this.retryTemplate.execute(context -> {
       Response<Self> agentSelf = getRetryConsulClient(context).getAgentSelf();
       log.debug(
-          "lansheng228: >>> function getAgentSelf =>  agentSelf: {} <<<", agentSelf);
+          "spring cloud consul cluster: >>> function getAgentSelf =>  agentSelf: {} <<<", agentSelf);
 
       return agentSelf;
     });
@@ -1208,7 +1205,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     return this.retryTemplate.execute(context -> {
       Response<Self> agentSelf = getRetryConsulClient(context).getAgentSelf(token);
       log.debug(
-          "lansheng228: >>> function getAgentSelf =>  token: {}  ===  agentSelf: {} <<<", token, agentSelf);
+          "spring cloud consul cluster: >>> function getAgentSelf =>  token: {}  ===  agentSelf: {} <<<", token, agentSelf);
 
       return agentSelf;
     });
@@ -1219,7 +1216,8 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     return this.retryTemplate.execute(context -> {
       Response<Void> result = getRetryConsulClient(context).agentSetMaintenance(maintenanceEnabled);
       log.debug(
-          "lansheng228: >>> function agentSetMaintenance =>  maintenanceEnabled: {}  ===  result: {} <<<", maintenanceEnabled, result);
+          "spring cloud consul cluster: >>> function agentSetMaintenance =>  maintenanceEnabled: {}  ===  result: {} <<<", maintenanceEnabled,
+          result);
 
       return result;
     });
@@ -1230,7 +1228,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     return this.retryTemplate.execute(context -> {
       Response<Void> result = getRetryConsulClient(context).agentSetMaintenance(maintenanceEnabled, reason);
       log.info(
-          "lansheng228: >>> function agentSetMaintenance =>  maintenanceEnabled: {}  ===  reason: {}  ===  result: {} <<<",
+          "spring cloud consul cluster: >>> function agentSetMaintenance =>  maintenanceEnabled: {}  ===  reason: {}  ===  result: {} <<<",
           maintenanceEnabled, reason, result);
 
       return result;
@@ -1242,7 +1240,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     return this.retryTemplate.execute(context -> {
       Response<Void> result = getRetryConsulClient(context).agentJoin(address, wan);
       log.info(
-          "lansheng228: >>> function agentJoin =>  address: {}  ===  wan: {}  ===  result: {} <<<",
+          "spring cloud consul cluster: >>> function agentJoin =>  address: {}  ===  wan: {}  ===  result: {} <<<",
           address, wan, result);
 
       return result;
@@ -1254,7 +1252,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     return this.retryTemplate.execute(context -> {
       Response<Void> result = getRetryConsulClient(context).agentForceLeave(node);
       log.info(
-          "lansheng228: >>> function agentForceLeave => node: {}  ===  result: {} <<<",
+          "spring cloud consul cluster: >>> function agentForceLeave => node: {}  ===  result: {} <<<",
           node, result);
 
       return result;
@@ -1266,7 +1264,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     return this.retryTemplate.execute(context -> {
       Response<Void> result = getRetryConsulClient(context).agentCheckRegister(newCheck);
       log.info(
-          "lansheng228: >>> function agentCheckRegister => newCheck: {}  ===  result: {} <<<",
+          "spring cloud consul cluster: >>> function agentCheckRegister => newCheck: {}  ===  result: {} <<<",
           newCheck, result);
 
       return result;
@@ -1278,7 +1276,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     return this.retryTemplate.execute(context -> {
       Response<Void> result = getRetryConsulClient(context).agentCheckRegister(newCheck, token);
       log.info(
-          "lansheng228: >>> function agentCheckRegister => newCheck: {}  ===  token: {}  ===  result: {} <<<",
+          "spring cloud consul cluster: >>> function agentCheckRegister => newCheck: {}  ===  token: {}  ===  result: {} <<<",
           newCheck, token, result);
 
       return result;
@@ -1290,7 +1288,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     return this.retryTemplate.execute(context -> {
       Response<Void> result = getRetryConsulClient(context).agentCheckDeregister(checkId);
       log.info(
-          "lansheng228: >>> function agentCheckDeregister => checkId: {}  ===  result: {} <<<",
+          "spring cloud consul cluster: >>> function agentCheckDeregister => checkId: {}  ===  result: {} <<<",
           checkId, result);
 
       return result;
@@ -1302,7 +1300,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     return this.retryTemplate.execute(context -> {
       Response<Void> result = getRetryConsulClient(context).agentCheckDeregister(checkId, token);
       log.info(
-          "lansheng228: >>> function agentCheckDeregister => checkId: {}  ===  token: {}  ===  result: {} <<<",
+          "spring cloud consul cluster: >>> function agentCheckDeregister => checkId: {}  ===  token: {}  ===  result: {} <<<",
           checkId, token, result);
 
       return result;
@@ -1321,12 +1319,12 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
       try {
         response = consulClient.getClient().agentCheckPass(checkId);
       } catch (Exception e) {
-        log.error("lansheng228: >>> {} <<<", e.getMessage());
+        log.error("spring cloud consul cluster: >>> {} <<<", e.getMessage());
       }
     }
 
     log.info(
-        "lansheng228: >>> function agentCheckPass => checkId: {}  ===  response: {} <<<",
+        "spring cloud consul cluster: >>> function agentCheckPass => checkId: {}  ===  response: {} <<<",
         checkId, response);
 
     return response;
@@ -1344,11 +1342,11 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
       try {
         response = consulClient.getClient().agentCheckPass(checkId, note);
       } catch (Exception e) {
-        log.error("lansheng228: >>> {} <<<", e.getMessage());
+        log.error("spring cloud consul cluster: >>> {} <<<", e.getMessage());
       }
     }
     log.info(
-        "lansheng228: >>> function agentCheckPass => checkId: {}  ===  note: {}  ===  response: {} <<<",
+        "spring cloud consul cluster: >>> function agentCheckPass => checkId: {}  ===  note: {}  ===  response: {} <<<",
         checkId, note, response);
 
     return response;
@@ -1366,11 +1364,11 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
       try {
         response = consulClient.getClient().agentCheckPass(checkId, note, token);
       } catch (Exception e) {
-        log.error("lansheng228: >>> {} <<<", e.getMessage());
+        log.error("spring cloud consul cluster: >>> {} <<<", e.getMessage());
       }
     }
     log.info(
-        "lansheng228: >>> function agentCheckPass => checkId: {}  ===  note: {}  ===  token: {}  ===  response: {} <<<",
+        "spring cloud consul cluster: >>> function agentCheckPass => checkId: {}  ===  note: {}  ===  token: {}  ===  response: {} <<<",
         checkId, note, token, response);
 
     return response;
@@ -1381,7 +1379,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     return this.retryTemplate.execute(context -> {
       Response<Void> result = getRetryConsulClient(context).agentCheckWarn(checkId);
       log.info(
-          "lansheng228: >>> function agentCheckWarn => checkId: {}  ===  result: {} <<<",
+          "spring cloud consul cluster: >>> function agentCheckWarn => checkId: {}  ===  result: {} <<<",
           checkId, result);
 
       return result;
@@ -1393,7 +1391,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     return this.retryTemplate.execute(context -> {
       Response<Void> result = getRetryConsulClient(context).agentCheckWarn(checkId, note);
       log.info(
-          "lansheng228: >>> function agentCheckWarn => checkId: {}  ===  note: {}  ===  result: {} <<<",
+          "spring cloud consul cluster: >>> function agentCheckWarn => checkId: {}  ===  note: {}  ===  result: {} <<<",
           checkId, note, result);
 
       return result;
@@ -1405,7 +1403,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     return this.retryTemplate.execute(context -> {
       Response<Void> result = getRetryConsulClient(context).agentCheckWarn(checkId, note, token);
       log.info(
-          "lansheng228: >>> function agentCheckWarn => checkId: {}  ===  note: {}  ===  token: {}  ===  result: {} <<<",
+          "spring cloud consul cluster: >>> function agentCheckWarn => checkId: {}  ===  note: {}  ===  token: {}  ===  result: {} <<<",
           checkId, note, token, result);
 
       return result;
@@ -1417,7 +1415,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     return this.retryTemplate.execute(context -> {
       Response<Void> result = getRetryConsulClient(context).agentCheckFail(checkId);
       log.info(
-          "lansheng228: >>> function agentCheckFail => checkId: {}  ===  result: {} <<<",
+          "spring cloud consul cluster: >>> function agentCheckFail => checkId: {}  ===  result: {} <<<",
           checkId, result);
 
       return result;
@@ -1429,7 +1427,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     return this.retryTemplate.execute(context -> {
       Response<Void> result = getRetryConsulClient(context).agentCheckFail(checkId, note);
       log.info(
-          "lansheng228: >>> function agentCheckFail => checkId: {}  ===  note: {}  ===  result: {} <<<",
+          "spring cloud consul cluster: >>> function agentCheckFail => checkId: {}  ===  note: {}  ===  result: {} <<<",
           checkId, note, result);
 
       return result;
@@ -1441,7 +1439,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     return this.retryTemplate.execute(context -> {
       Response<Void> result = getRetryConsulClient(context).agentCheckFail(checkId, note, token);
       log.info(
-          "lansheng228: >>> function agentCheckFail => checkId: {}  ===  note: {}  ===  token: {}  ===  result: {} <<<",
+          "spring cloud consul cluster: >>> function agentCheckFail => checkId: {}  ===  note: {}  ===  token: {}  ===  result: {} <<<",
           checkId, note, token, result);
 
       return result;
@@ -1455,38 +1453,19 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
    */
   @Override
   public Response<Void> agentServiceRegister(NewService newService) {
-    ScheduledThreadPoolExecutor scheduledThreadPoolExecutor = new ScheduledThreadPoolExecutor(
-        1, new BasicThreadFactory.Builder().namingPattern("schedule-pool-%d").daemon(false).build());
-    // 第一个参数是任务，第二个参数为首次执行的延时时间，第三个参数为定时执行的间隔时间,第四个参数是时间单位
-    scheduledThreadPoolExecutor.scheduleAtFixedRate(() -> {
-      log.debug("Local Time is " + new Date().toString());
-      Response<Void> result = null;
-      for (ConsulClientHolder consulClient : consulClients) {
-        if (consulClient.isHealthy()) {
-          result = consulClient.getClient().agentServiceRegister(newService);
-        }
-      }
-      log.info(
-          "lansheng228: >>> function agentServiceRegister => newService: {}  ===  result: {}  <<<",
-          newService, result);
-    }, clusterConsulProperties.getHealthCheckInterval(),
-        clusterConsulProperties.getHealthCheckInterval(), TimeUnit.MILLISECONDS);
+    this.currentNewService = newService;
 
-//    this.currentNewService = newService;
-//
-//    return this.retryTemplate.execute(context -> {
     Response<Void> result = null;
-//      for (ConsulClientHolder consulClient : this.consulClients) {
-//        if (consulClient.isHealthy()) {
-//          result = consulClient.getClient().agentServiceRegister(newService);
-//        }
-//      }
-//      log.info(
-//          "lansheng228: >>> function agentServiceRegister => newService: {}  ===  result: {}  <<<",
-//          newService, result);
-//
+    for (ConsulClientHolder consulClient : this.consulClients) {
+      if (consulClient.isHealthy()) {
+        result = consulClient.getClient().agentServiceRegister(newService);
+      }
+    }
+    log.info(
+        "spring cloud consul cluster: >>> function agentServiceRegister => newService: {}  ===  result: {}  <<<",
+        newService, result);
+
     return result;
-//    });
   }
 
   //重新注册
@@ -1507,11 +1486,11 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     if (ObjectUtils.isNotEmpty(this.currentNewService)) {
       if (ObjectUtils.isNotEmpty(this.currentToken)) {
         log.info(
-            "lansheng228: >>> function agentServiceReregister => currentNewService: {}  ===  currentToken: {} ===  result: {} <<<",
+            "spring cloud consul cluster: >>> function agentServiceReregister => currentNewService: {}  ===  currentToken: {} ===  result: {} <<<",
             this.currentNewService, this.currentToken, result);
       } else {
         log.info(
-            "lansheng228: >>> function agentServiceReregister => currentNewService: {}  ===  result: {} <<<",
+            "spring cloud consul cluster: >>> function agentServiceReregister => currentNewService: {}  ===  result: {} <<<",
             this.currentNewService, result);
       }
     }
@@ -1524,39 +1503,20 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
    */
   @Override
   public Response<Void> agentServiceRegister(NewService newService, String token) {
-    ScheduledThreadPoolExecutor scheduledThreadPoolExecutor = new ScheduledThreadPoolExecutor(
-        1, new BasicThreadFactory.Builder().namingPattern("schedule-pool-%d").daemon(false).build());
-    // 第一个参数是任务，第二个参数为首次执行的延时时间，第三个参数为定时执行的间隔时间,第四个参数是时间单位
-    scheduledThreadPoolExecutor.scheduleAtFixedRate(() -> {
-      log.debug("Local Time is " + new Date().toString());
-      Response<Void> result = null;
-      for (ConsulClientHolder consulClient : consulClients) {
-        if (consulClient.isHealthy()) {
-          result = consulClient.getClient().agentServiceRegister(newService, token);
-        }
-      }
-      log.info(
-          "lansheng228: >>> function agentServiceRegister => newService: {}  ===  token: {} ===  response: {} <<<",
-          newService, token, result);
-    }, clusterConsulProperties.getHealthCheckInterval(),
-        clusterConsulProperties.getHealthCheckInterval(), TimeUnit.MILLISECONDS);
+    this.currentNewService = newService;
+    this.currentToken = token;
 
-//    this.currentNewService = newService;
-//    this.currentToken = token;
-//
-//    return this.retryTemplate.execute(context -> {
     Response<Void> result = null;
-//      for (ConsulClientHolder consulClient : this.consulClients) {
-//        if (consulClient.isHealthy()) {
-//          result = consulClient.getClient().agentServiceRegister(newService, token);
-//        }
-//      }
-//      log.info(
-//          "lansheng228: >>> function agentServiceRegister => newService: {}  ===  token: {} ===  response: {} <<<",
-//          newService, token, result);
-//
+    for (ConsulClientHolder consulClient : this.consulClients) {
+      if (consulClient.isHealthy()) {
+        result = consulClient.getClient().agentServiceRegister(newService, token);
+      }
+    }
+    log.info(
+        "spring cloud consul cluster: >>> function agentServiceRegister => newService: {}  ===  token: {} ===  response: {} <<<",
+        newService, token, result);
+
     return result;
-//    });
   }
 
   /**
@@ -1566,20 +1526,18 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
    */
   @Override
   public Response<Void> agentServiceDeregister(String serviceId) {
-    return this.retryTemplate.execute(context -> {
-      Response<Void> response = null;
-      for (ConsulClientHolder consulClient : this.consulClients) {
-        if (consulClient.isHealthy()) {
-          response = consulClient.getClient().agentServiceDeregister(serviceId);
-        }
+    Response<Void> response = null;
+    for (ConsulClientHolder consulClient : this.consulClients) {
+      if (consulClient.isHealthy()) {
+        response = consulClient.getClient().agentServiceDeregister(serviceId);
       }
+    }
 
-      log.info(
-          "lansheng228: >>> function agentServiceDeregister => serviceId: {}   ===  response: {}  <<<",
-          serviceId, response);
+    log.info(
+        "spring cloud consul cluster: >>> function agentServiceDeregister => serviceId: {}   ===  response: {}  <<<",
+        serviceId, response);
 
-      return response;
-    });
+    return response;
   }
 
   /**
@@ -1589,44 +1547,40 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
    */
   @Override
   public Response<Void> agentServiceDeregister(String serviceId, String token) {
-    return this.retryTemplate.execute(context -> {
-      Response<Void> response = null;
-      for (ConsulClientHolder consulClient : this.consulClients) {
-        if (consulClient.isHealthy()) {
-          response = consulClient.getClient().agentServiceDeregister(serviceId, token);
-        }
+    Response<Void> response = null;
+    for (ConsulClientHolder consulClient : this.consulClients) {
+      if (consulClient.isHealthy()) {
+        response = consulClient.getClient().agentServiceDeregister(serviceId, token);
       }
+    }
 
-      log.info(
-          "lansheng228: >>> function agentServiceDeregister => serviceId: {}  ===  token: {}  ===  response: {}  <<<",
-          serviceId, token, response);
+    log.info(
+        "spring cloud consul cluster: >>> function agentServiceDeregister => serviceId: {}  ===  token: {}  ===  response: {}  <<<",
+        serviceId, token, response);
 
-      return response;
-    });
+    return response;
   }
 
   /**
-   * 则向可用节点执行setMaintenance
+   * 向可用节点执行setMaintenance
    *
    * see ConsulServiceRegistry.setStatus(...)
    */
   @Override
   public Response<Void> agentServiceSetMaintenance(String serviceId, boolean maintenanceEnabled) {
-    return this.retryTemplate.execute(context -> {
-      Response<Void> response = null;
-      for (ConsulClientHolder consulClient : this.consulClients) {
-        if (consulClient.isHealthy()) {
-          response = consulClient.getClient().agentServiceSetMaintenance(serviceId,
-              maintenanceEnabled);
-        }
+    Response<Void> response = null;
+    for (ConsulClientHolder consulClient : this.consulClients) {
+      if (consulClient.isHealthy()) {
+        response = consulClient.getClient().agentServiceSetMaintenance(serviceId,
+            maintenanceEnabled);
       }
+    }
 
-      log.info(
-          "lansheng228: >>> function agentServiceSetMaintenance => serviceId: {}  ===  maintenanceEnabled: {}  ===  response: {}  <<<",
-          serviceId, maintenanceEnabled, response);
+    log.info(
+        "spring cloud consul cluster: >>> function agentServiceSetMaintenance => serviceId: {}  ===  maintenanceEnabled: {}  ===  response: {}  <<<",
+        serviceId, maintenanceEnabled, response);
 
-      return response;
-    });
+    return response;
   }
 
   /**
@@ -1637,21 +1591,19 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   @Override
   public Response<Void> agentServiceSetMaintenance(String serviceId,
       boolean maintenanceEnabled, String reason) {
-    return this.retryTemplate.execute(context -> {
-      Response<Void> response = null;
-      for (ConsulClientHolder consulClient : this.consulClients) {
-        if (consulClient.isHealthy()) {
-          response = consulClient.getClient().agentServiceSetMaintenance(serviceId,
-              maintenanceEnabled, reason);
-        }
+    Response<Void> response = null;
+    for (ConsulClientHolder consulClient : this.consulClients) {
+      if (consulClient.isHealthy()) {
+        response = consulClient.getClient().agentServiceSetMaintenance(serviceId,
+            maintenanceEnabled, reason);
       }
+    }
 
-      log.info(
-          "lansheng228: >>> function agentServiceSetMaintenance => serviceId: {}  ===  maintenanceEnabled: {}  ===  reason: {} ===  response: {}  <<<",
-          serviceId, maintenanceEnabled, reason, response);
+    log.info(
+        "spring cloud consul cluster: >>> function agentServiceSetMaintenance => serviceId: {}  ===  maintenanceEnabled: {}  ===  reason: {} ===  response: {}  <<<",
+        serviceId, maintenanceEnabled, reason, response);
 
-      return response;
-    });
+    return response;
   }
 
   /**
@@ -1664,12 +1616,12 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
       try {
         response = consulClient.getClient().agentReload();
       } catch (Exception e) {
-        log.error("lansheng228: >>> {} <<<", e.getMessage());
+        log.error("spring cloud consul cluster: >>> {} <<<", e.getMessage());
       }
     }
 
     log.info(
-        "lansheng228: >>> function agentReload =>  response: {}  <<<", response);
+        "spring cloud consul cluster: >>> function agentReload =>  response: {}  <<<", response);
 
     return response;
   }
@@ -1679,7 +1631,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     return this.retryTemplate.execute(context -> {
       Response<String> acl = getRetryConsulClient(context).aclCreate(newAcl, token);
       log.info(
-          "lansheng228: >>> function aclCreate => newAcl: {}  ===  token: {}  ===  acl: {} <<<",
+          "spring cloud consul cluster: >>> function aclCreate => newAcl: {}  ===  token: {}  ===  acl: {} <<<",
           newAcl, token, acl);
 
       return acl;
@@ -1691,7 +1643,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     return this.retryTemplate.execute(context -> {
       Response<Void> result = getRetryConsulClient(context).aclUpdate(updateAcl, token);
       log.info(
-          "lansheng228: >>> function aclUpdate => updateAcl: {}  ===  token: {}  ===  result: {} <<<",
+          "spring cloud consul cluster: >>> function aclUpdate => updateAcl: {}  ===  token: {}  ===  result: {} <<<",
           updateAcl, token, result);
 
       return result;
@@ -1703,7 +1655,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     return this.retryTemplate.execute(context -> {
       Response<Void> result = getRetryConsulClient(context).aclDestroy(aclId, token);
       log.info(
-          "lansheng228: >>> function aclDestroy => aclId: {}  ===  token: {}  ===  result: {} <<<",
+          "spring cloud consul cluster: >>> function aclDestroy => aclId: {}  ===  token: {}  ===  result: {} <<<",
           aclId, token, result);
 
       return result;
@@ -1715,7 +1667,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     return this.retryTemplate.execute(context -> {
       Response<Acl> acl = getRetryConsulClient(context).getAcl(id);
       log.info(
-          "lansheng228: >>> function getAcl => id: {}  ===  acl: {} <<<",
+          "spring cloud consul cluster: >>> function getAcl => id: {}  ===  acl: {} <<<",
           id, acl);
 
       return acl;
@@ -1727,7 +1679,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     return this.retryTemplate.execute(context -> {
       Response<String> aclClone = getRetryConsulClient(context).aclClone(aclId, token);
       log.info(
-          "lansheng228: >>> function aclClone => aclId: {}  ===  token: {}  ===  aclClone: {} <<<",
+          "spring cloud consul cluster: >>> function aclClone => aclId: {}  ===  token: {}  ===  aclClone: {} <<<",
           aclId, token, aclClone);
 
       return aclClone;
@@ -1739,7 +1691,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     return this.retryTemplate.execute(context -> {
       Response<List<Acl>> aclList = getRetryConsulClient(context).getAclList(token);
       log.info(
-          "lansheng228: >>> function getAclList => token: {}  ===  aclList: {} <<<",
+          "spring cloud consul cluster: >>> function getAclList => token: {}  ===  aclList: {} <<<",
           token, aclList);
 
       return aclList;
@@ -1768,22 +1720,22 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
 
     //consul agent数小于配置的consul agent数，说明有consul节点不可用。告警。
     if (tmpConsulClients.size() < this.clusterConsulProperties.getClusterNodes().size()) {
-      log.warn("lansheng228: >>> Some consul clients are not available. Please check.");
+      log.warn("spring cloud consul cluster: >>> Some consul clients are not available. Please check.");
     }
 
     //consul agent数小于等于3个时，集群即将崩溃。告警。
     if (tmpConsulClients.size() <= 3) {
-      log.warn("lansheng228: >>> The num of consul clients is too few. Please check and add more consul client.");
+      log.warn("spring cloud consul cluster: >>> The num of consul clients is too few. Please check and add more consul client.");
     }
 
     //consul agent数少于2个， consul集群崩溃。报错。
     if (tmpConsulClients.size() < 2) {
-      log.error("lansheng228: >>> The consul cluster is not available. Please check and repair.");
+      log.error("spring cloud consul cluster: >>> The consul cluster is not available. Please check and repair.");
     }
 
     connectList = tmpConsulClients.stream().map(ConsulClientHolder::getClientId)
         .collect(Collectors.toList());
-    log.info("lansheng228: >>> Creating cluster consul clients: {} <<<", connectList);
+    log.info("spring cloud consul cluster: >>> Creating cluster consul clients: {} <<<", connectList);
 
     return tmpConsulClients;
   }
@@ -1793,7 +1745,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
    */
   protected List<String> prepareConnectList() {
     List<String> connectList = this.clusterConsulProperties.getClusterNodes();
-    log.info("lansheng228: >>> Connect list: " + connectList + " <<<");
+    log.info("spring cloud consul cluster: >>> Connect list: " + connectList + " <<<");
 
     return connectList;
   }
@@ -1845,7 +1797,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     String key = this.clusterConsulProperties.getClusterClientKey();
     List<ConsulClientHolder> clients = this.consulClients;
     ConsulClientHolder chooseClient = ConsulClientUtil.chooseClient(key, clients);
-    log.info("lansheng228: >>>  Hash Key: {}  ==== Hash List: {}  ====  Hash Result: {} <<<", key, clients, chooseClient);
+    log.info("spring cloud consul cluster: >>>  Hash Key: {}  ==== Hash List: {}  ====  Hash Result: {} <<<", key, clients, chooseClient);
 
     return chooseClient;
   }
@@ -1861,11 +1813,11 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
         List<ConsulClientHolder> availableClients = this.consulClients.stream()
             .filter(ConsulClientHolder::isHealthy).sorted()
             .collect(Collectors.toList());
-        log.info("lansheng228: >>> Available ConsulClients: " + availableClients + " <<<");
+        log.info("spring cloud consul cluster: >>> Available ConsulClients: " + availableClients + " <<<");
 
         if (ObjectUtils.isEmpty(availableClients)) {
           checkConsulClientsHealth(); // 一个健康节点都没有，则立马执行一次全部健康检测
-          throw new IllegalStateException("lansheng228: >>> No consul client is available!!!");
+          throw new IllegalStateException("spring cloud consul cluster: >>> No consul client is available!!!");
         }
 
         // 在健康节点中通过哈希一致性算法选取一个节点
@@ -1873,10 +1825,10 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
             this.clusterConsulProperties.getClusterClientKey(), availableClients);
 
         if (choosedClient == null) {
-          throw new IllegalStateException("lansheng228: >>> Choosed New ConsulClient Fail!!!");
+          throw new IllegalStateException("spring cloud consul cluster: >>> Choosed New ConsulClient Fail!!!");
         }
 
-        log.info("lansheng228: >>> Successfully choosed a new ConsulClient : {} <<<",
+        log.info("spring cloud consul cluster: >>> Successfully choosed a new ConsulClient : {} <<<",
             choosedClient);
         this.currentClient = choosedClient;
       }
@@ -1894,12 +1846,12 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     context.setAttribute(CURRENT_CLIENT_KEY, this.currentClient);
     int retryCount = context.getRetryCount();
     if (!this.currentClient.isHealthy()) {
-      log.info("lansheng228: >>> Current ConsulClient[{}] Is Unhealthy. Choose Again! <<<",
+      log.info("spring cloud consul cluster: >>> Current ConsulClient[{}] Is Unhealthy. Choose Again! <<<",
           this.currentClient);
       chooseConsulClient();
     }
     if (retryCount > 0) {
-      log.info("lansheng228: >>> Using current ConsulClient[{}] for retry {} <<<",
+      log.info("spring cloud consul cluster: >>> Using current ConsulClient[{}] for retry {} <<<",
           this.currentClient, retryCount);
     }
 
@@ -1955,7 +1907,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     boolean allHealthy = isAllConsulClientsHealthy();
     if (allHealthy && (this.currentClient != this.primaryClient)) { // 如果所有节点都是健康的，那么恢复currentClient为primaryClient
       this.currentClient = this.primaryClient;
-      log.info("lansheng228: >>> The primaryClient is recovered when all consul clients is healthy. <<<");
+      log.info("spring cloud consul cluster: >>> The primaryClient is recovered when all consul clients is healthy. <<<");
     }
   }
 
@@ -1964,25 +1916,26 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
 
     boolean flag = ListUtil.isSame(this.consulClients, tmpConsulClients);
 
-    log.info("lansheng228: >>> createAllConsulClients. {}           The Size: {}.     Is Same? {} <<<", tmpConsulClients, tmpConsulClients.size(),
+    log.info("spring cloud consul cluster: >>> createAllConsulClients. {}           The Size: {}.     Is Same? {} <<<", tmpConsulClients,
+        tmpConsulClients.size(),
         flag);
 
     //consul节点有变化
     if (!flag) {
       this.consulClients = tmpConsulClients;
       //重新注册
-//      agentServiceReregister();
+      agentServiceReregister();
     }
   }
 
-  private Map<ConsulClientHolder, Boolean> checkAllConsulClientsHealth() {
-    Map<ConsulClientHolder, Boolean> tmpConsulClientHealthMap = new HashMap<>();
+  private Map<String, Boolean> checkAllConsulClientsHealth() {
+    Map<String, Boolean> tmpConsulClientHealthMap = new HashMap<>();
     for (ConsulClientHolder consulClient : this.consulClients) {
       consulClient.checkHealth();
-      tmpConsulClientHealthMap.put(consulClient, consulClient.isHealthy());
+      tmpConsulClientHealthMap.put(consulClient.getClientId(), consulClient.isHealthy());
       consulClient.setPrimary(consulClient == this.primaryClient);
     }
-    log.info("lansheng228: >>> check all consul clients healthy: {} <<<", tmpConsulClientHealthMap);
+    log.info("spring cloud consul cluster: >>> check all consul clients healthy: {} <<<", tmpConsulClientHealthMap);
 
     return tmpConsulClientHealthMap;
   }
@@ -1993,7 +1946,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   protected boolean isAllConsulClientsHealthy() {
     AtomicBoolean allHealthy = new AtomicBoolean(true);
     this.consulClientHealthMap.values().forEach(isHealthy -> allHealthy.set(allHealthy.get() && isHealthy));
-    log.info("lansheng228: >>>  All Consul Clients are health? {} <<<", allHealthy.get());
+    log.info("spring cloud consul cluster: >>>  All Consul Clients are health? {} <<<", allHealthy.get());
 
     return allHealthy.get();
   }
