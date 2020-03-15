@@ -72,7 +72,7 @@ public class ConsulClientHolder implements Comparable<ConsulClientHolder> {
       }
     }
     this.setHealthy(tmpHealthy);
-    log.info("lansheng228: >>> Cluster consul client healthcheck finished: {} <<<", this);
+    log.info("lansheng228: >>> Cluster consul client health check finished: {} <<<", this);
   }
 
   /**
