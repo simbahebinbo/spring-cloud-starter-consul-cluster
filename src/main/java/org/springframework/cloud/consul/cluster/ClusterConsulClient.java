@@ -1908,11 +1908,15 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
 
   protected void createAllConsulClients() {
     List<ConsulClientHolder> tmpConsulClients = createConsulClients();
-    log.info("lansheng228: >>> createAllConsulClients. {} <<<", tmpConsulClients);
 
-    if (this.consulClients != tmpConsulClients) {
+    boolean flag = ListUtil.isSame(this.consulClients, tmpConsulClients);
+
+    log.info("lansheng228: >>> createAllConsulClients. {}  Is Same? {} <<<", tmpConsulClients, flag);
+
+    //consul节点有变化
+    if (!flag) {
       this.consulClients = tmpConsulClients;
-      //consul节点有变化，重新注册
+      //重新注册
       agentServiceReregister();
     }
   }
