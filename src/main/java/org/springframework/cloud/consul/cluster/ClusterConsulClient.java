@@ -1728,6 +1728,22 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
       ConsulClientHolder consulClientHolder = new ConsulClientHolder(properties);
       return consulClientHolder;
     }).filter(ConsulClientHolder::isHealthy).sorted().collect(Collectors.toList()); // 排序
+
+    //consul agent数小于配置的consul agent数，说明有consul节点不可用。告警。
+    if (tmpConsulClients.size() < this.clusterConsulProperties.getClusterNodes().size()) {
+      log.warn("lansheng228: >>> Some consul clients are not available. Please check.");
+    }
+
+    //consul agent数小于等于3个时，集群即将崩溃。告警。
+    if (tmpConsulClients.size() <= 3) {
+      log.warn("lansheng228: >>> The num of consul clients is too few. Please check and add more consul client.");
+    }
+
+    //consul agent数少于2个， consul集群崩溃。报错。
+    if (tmpConsulClients.size() < 2) {
+      log.error("lansheng228: >>> The consul cluster is not available. Please check and repair.");
+    }
+
     connectList = tmpConsulClients.stream().map(ConsulClientHolder::getClientId)
         .collect(Collectors.toList());
     log.info("lansheng228: >>> Creating cluster consul clients: {} <<<", connectList);
@@ -1911,13 +1927,14 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
 
     boolean flag = ListUtil.isSame(this.consulClients, tmpConsulClients);
 
-    log.info("lansheng228: >>> createAllConsulClients. {}  Is Same? {} <<<", tmpConsulClients, flag);
+    log.info("lansheng228: >>> createAllConsulClients. {}           The Size: {}.     Is Same? {} <<<", tmpConsulClients, tmpConsulClients.size(), flag);
 
     //consul节点有变化
     if (!flag) {
       this.consulClients = tmpConsulClients;
+      throw new BadConsulAgentException("lansheng228: >>> consul client has change");
       //重新注册
-      agentServiceReregister();
+//      agentServiceReregister();
     }
   }
 

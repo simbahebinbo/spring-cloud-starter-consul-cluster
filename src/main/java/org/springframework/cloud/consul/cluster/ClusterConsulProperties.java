@@ -54,7 +54,8 @@ public class ClusterConsulProperties extends ConsulProperties {
   @Setter
   private List<Class<? extends Throwable>> retryableExceptions = Arrays.asList(
       TransportException.class, OperationException.class, IOException.class,
-      ConnectException.class, TimeoutException.class, SocketTimeoutException.class);
+      ConnectException.class, TimeoutException.class, SocketTimeoutException.class,
+      BadConsulAgentException.class);
 
   /**
    * 初始化时是否要求所有节点都必须是client节点

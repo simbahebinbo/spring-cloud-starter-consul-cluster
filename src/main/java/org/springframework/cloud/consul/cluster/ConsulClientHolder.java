@@ -48,8 +48,12 @@ public class ConsulClientHolder implements Comparable<ConsulClientHolder> {
     super();
     this.properties = properties;
     this.client = ConsulClientUtil.createConsulClient(properties);
-    log.info("lansheng228: >>> Cluster ConsulClient[{}] created! <<<", this.getClientId());
-    this.checkHealth(); // 创建时做一次健康检测
+    if (ObjectUtils.isNotEmpty(this.client)) {
+      log.info("lansheng228: >>> Cluster ConsulClient[{}] created! <<<", this.getClientId());
+      this.checkHealth(); // 创建时做一次健康检测
+    } else {
+      log.warn("lansheng228: >>> Cluster ConsulClient[{}] cannot create! <<<", this.getClientId());
+    }
   }
 
   public String getClientId() {

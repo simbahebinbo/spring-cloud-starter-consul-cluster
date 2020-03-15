@@ -19,9 +19,7 @@ public class ListUtil {
    * 判断 两个链表 是否相同
    */
   public static boolean isSame(@NonNull List<ConsulClientHolder> listOne, @NonNull List<ConsulClientHolder> listTwo) {
-    log.info("需要对比的两个list: {}, {}", listOne, listTwo);
     if (listOne.size() != listTwo.size()) {
-      log.info("ListUtil: 数量不同");
       return false;
     }
 
@@ -33,7 +31,6 @@ public class ListUtil {
         .orElseGet(Collections::emptyList);
 
     if (sortListOne.size() != sortListTwo.size()) {
-      log.info("ListUtil: 排序后数量不同");
       return false;
     }
 
@@ -44,7 +41,6 @@ public class ListUtil {
       ConsulClientHolder clientOne = sortListOne.get(i);
       ConsulClientHolder clientTwo = sortListTwo.get(i);
       if (clientOne.compareTo(clientTwo) != 0) {
-        log.info("ListUtil: client不同");
         flag = false;
         break;
       }
