@@ -1740,9 +1740,9 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
       log.error("spring cloud consul cluster: >>> The consul cluster is not available. Please check and repair.");
     }
 
-    connectList = tmpConsulClients.stream().map(ConsulClientHolder::getClientId)
+    List<String> clientIdList = tmpConsulClients.stream().map(ConsulClientHolder::getClientId)
         .collect(Collectors.toList());
-    log.info("spring cloud consul cluster: >>> Creating cluster consul clients: {} <<<", connectList);
+    log.info("spring cloud consul cluster: >>> Creating cluster consul clients: {} <<<", clientIdList);
 
     return tmpConsulClients;
   }
@@ -1804,6 +1804,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     String key = this.clusterConsulProperties.getClusterClientKey();
     List<ConsulClientHolder> clients = this.consulClients;
     ConsulClientHolder chooseClient = ConsulClientUtil.chooseClient(key, clients);
+    chooseClient.setPrimary(true);
     log.info("spring cloud consul cluster: >>>  Hash Key: {}  ==== Hash List: {}  ====  Hash Result: {} <<<", key, clients, chooseClient);
 
     return chooseClient;
@@ -1949,7 +1950,6 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     for (ConsulClientHolder consulClient : this.consulClients) {
       consulClient.checkHealth();
       tmpConsulClientHealthMap.put(consulClient.getClientId(), consulClient.isHealthy());
-      consulClient.setPrimary(consulClient == this.primaryClient);
     }
     log.info("spring cloud consul cluster: >>> check all consul clients healthy: {} <<<", tmpConsulClientHealthMap);
 
