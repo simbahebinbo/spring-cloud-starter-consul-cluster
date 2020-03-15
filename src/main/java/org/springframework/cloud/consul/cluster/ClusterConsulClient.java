@@ -1460,17 +1460,19 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   public Response<Void> agentServiceRegister(NewService newService) {
     this.currentNewService = newService;
 
-    Response<Void> result = null;
-    for (ConsulClientHolder consulClient : this.consulClients) {
-      if (consulClient.isHealthy()) {
-        result = consulClient.getClient().agentServiceRegister(newService);
+    return this.retryTemplate.execute(context -> {
+      Response<Void> result = null;
+      for (ConsulClientHolder consulClient : this.consulClients) {
+        if (consulClient.isHealthy()) {
+          result = consulClient.getClient().agentServiceRegister(newService);
+        }
       }
-    }
-    log.debug(
-        "spring cloud consul cluster: >>> function agentServiceRegister => newService: {}  ===  result: {}  <<<",
-        newService, result);
+      log.debug(
+          "spring cloud consul cluster: >>> function agentServiceRegister => newService: {}  ===  result: {}  <<<",
+          newService, result);
 
-    return result;
+      return result;
+    });
   }
 
   //重新注册
@@ -1511,17 +1513,19 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     this.currentNewService = newService;
     this.currentToken = token;
 
-    Response<Void> result = null;
-    for (ConsulClientHolder consulClient : this.consulClients) {
-      if (consulClient.isHealthy()) {
-        result = consulClient.getClient().agentServiceRegister(newService, token);
+    return this.retryTemplate.execute(context -> {
+      Response<Void> result = null;
+      for (ConsulClientHolder consulClient : this.consulClients) {
+        if (consulClient.isHealthy()) {
+          result = consulClient.getClient().agentServiceRegister(newService, token);
+        }
       }
-    }
-    log.debug(
-        "spring cloud consul cluster: >>> function agentServiceRegister => newService: {}  ===  token: {} ===  response: {} <<<",
-        newService, token, result);
+      log.debug(
+          "spring cloud consul cluster: >>> function agentServiceRegister => newService: {}  ===  token: {} ===  response: {} <<<",
+          newService, token, result);
 
-    return result;
+      return result;
+    });
   }
 
   /**
@@ -1531,18 +1535,20 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
    */
   @Override
   public Response<Void> agentServiceDeregister(String serviceId) {
-    Response<Void> response = null;
-    for (ConsulClientHolder consulClient : this.consulClients) {
-      if (consulClient.isHealthy()) {
-        response = consulClient.getClient().agentServiceDeregister(serviceId);
+    return this.retryTemplate.execute(context -> {
+      Response<Void> response = null;
+      for (ConsulClientHolder consulClient : this.consulClients) {
+        if (consulClient.isHealthy()) {
+          response = consulClient.getClient().agentServiceDeregister(serviceId);
+        }
       }
-    }
 
-    log.debug(
-        "spring cloud consul cluster: >>> function agentServiceDeregister => serviceId: {}   ===  response: {}  <<<",
-        serviceId, response);
+      log.debug(
+          "spring cloud consul cluster: >>> function agentServiceDeregister => serviceId: {}   ===  response: {}  <<<",
+          serviceId, response);
 
-    return response;
+      return response;
+    });
   }
 
   /**
@@ -1552,18 +1558,20 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
    */
   @Override
   public Response<Void> agentServiceDeregister(String serviceId, String token) {
-    Response<Void> response = null;
-    for (ConsulClientHolder consulClient : this.consulClients) {
-      if (consulClient.isHealthy()) {
-        response = consulClient.getClient().agentServiceDeregister(serviceId, token);
+    return this.retryTemplate.execute(context -> {
+      Response<Void> response = null;
+      for (ConsulClientHolder consulClient : this.consulClients) {
+        if (consulClient.isHealthy()) {
+          response = consulClient.getClient().agentServiceDeregister(serviceId, token);
+        }
       }
-    }
 
-    log.debug(
-        "spring cloud consul cluster: >>> function agentServiceDeregister => serviceId: {}  ===  token: {}  ===  response: {}  <<<",
-        serviceId, token, response);
+      log.debug(
+          "spring cloud consul cluster: >>> function agentServiceDeregister => serviceId: {}  ===  token: {}  ===  response: {}  <<<",
+          serviceId, token, response);
 
-    return response;
+      return response;
+    });
   }
 
   /**
@@ -1573,19 +1581,21 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
    */
   @Override
   public Response<Void> agentServiceSetMaintenance(String serviceId, boolean maintenanceEnabled) {
-    Response<Void> response = null;
-    for (ConsulClientHolder consulClient : this.consulClients) {
-      if (consulClient.isHealthy()) {
-        response = consulClient.getClient().agentServiceSetMaintenance(serviceId,
-            maintenanceEnabled);
+    return this.retryTemplate.execute(context -> {
+      Response<Void> response = null;
+      for (ConsulClientHolder consulClient : this.consulClients) {
+        if (consulClient.isHealthy()) {
+          response = consulClient.getClient().agentServiceSetMaintenance(serviceId,
+              maintenanceEnabled);
+        }
       }
-    }
 
-    log.debug(
-        "spring cloud consul cluster: >>> function agentServiceSetMaintenance => serviceId: {}  ===  maintenanceEnabled: {}  ===  response: {}  <<<",
-        serviceId, maintenanceEnabled, response);
+      log.debug(
+          "spring cloud consul cluster: >>> function agentServiceSetMaintenance => serviceId: {}  ===  maintenanceEnabled: {}  ===  response: {}  <<<",
+          serviceId, maintenanceEnabled, response);
 
-    return response;
+      return response;
+    });
   }
 
   /**
@@ -1596,19 +1606,21 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   @Override
   public Response<Void> agentServiceSetMaintenance(String serviceId,
       boolean maintenanceEnabled, String reason) {
-    Response<Void> response = null;
-    for (ConsulClientHolder consulClient : this.consulClients) {
-      if (consulClient.isHealthy()) {
-        response = consulClient.getClient().agentServiceSetMaintenance(serviceId,
-            maintenanceEnabled, reason);
+    return this.retryTemplate.execute(context -> {
+      Response<Void> response = null;
+      for (ConsulClientHolder consulClient : this.consulClients) {
+        if (consulClient.isHealthy()) {
+          response = consulClient.getClient().agentServiceSetMaintenance(serviceId,
+              maintenanceEnabled, reason);
+        }
       }
-    }
 
-    log.debug(
-        "spring cloud consul cluster: >>> function agentServiceSetMaintenance => serviceId: {}  ===  maintenanceEnabled: {}  ===  reason: {} ===  response: {}  <<<",
-        serviceId, maintenanceEnabled, reason, response);
+      log.debug(
+          "spring cloud consul cluster: >>> function agentServiceSetMaintenance => serviceId: {}  ===  maintenanceEnabled: {}  ===  reason: {} ===  response: {}  <<<",
+          serviceId, maintenanceEnabled, reason, response);
 
-    return response;
+      return response;
+    });
   }
 
   /**
@@ -1913,7 +1925,9 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     this.consulClientHealthMap = checkAllConsulClientsHealth();
 
     boolean allHealthy = isAllConsulClientsHealthy();
-    if (allHealthy && (this.currentClient != this.primaryClient)) { // 如果所有节点都是健康的，那么恢复currentClient为primaryClient
+    if (allHealthy &&
+        (this.currentClient != this.primaryClient)
+        && this.primaryClient.isHealthy()) { // 如果所有节点都是健康的，那么恢复currentClient为primaryClient
       this.currentClient = this.primaryClient;
       log.info("spring cloud consul cluster: >>> The primaryClient is recovered when all consul clients is healthy. <<<");
     }
