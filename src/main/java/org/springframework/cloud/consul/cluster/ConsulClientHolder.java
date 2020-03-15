@@ -49,7 +49,7 @@ public class ConsulClientHolder implements Comparable<ConsulClientHolder> {
     this.properties = properties;
     this.client = ConsulClientUtil.createConsulClient(properties);
     if (ObjectUtils.isNotEmpty(this.client)) {
-      log.info("spring cloud consul cluster: >>> Cluster ConsulClient[{}] created! <<<", this.getClientId());
+      log.debug("spring cloud consul cluster: >>> Cluster ConsulClient[{}] created! <<<", this.getClientId());
       this.checkHealth(); // 创建时做一次健康检测
     } else {
       log.warn("spring cloud consul cluster: >>> Cluster ConsulClient[{}] cannot create! <<<", this.getClientId());

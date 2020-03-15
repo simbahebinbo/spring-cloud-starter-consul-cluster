@@ -16,7 +16,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.cloud.consul.ConsulProperties;
-import org.springframework.util.Assert;
 
 /**
  * ConsulClient工具类
@@ -73,21 +72,20 @@ public class ConsulClientUtil {
           tls.getKeyStorePath(), tls.getKeyStorePassword());
       try {
         consulClient = new ConsulClient(agentHost, agentPort, tlsConfig);
-        log.info(
+        log.debug(
             "spring cloud consul cluster: >>> createConsulClient Success. agentHost: " + agentHost + "      agentPort: " + agentPort + "     tlsConfig: " + tlsConfig
                 + " <<<");
       } catch (Exception e) {
-        log.info(
+        log.warn(
             "spring cloud consul cluster: >>> createConsulClient Fail. agentHost: " + agentHost + "      agentPort: " + agentPort + "     tlsConfig: " + tlsConfig
                 + "  {}  <<<", e.getMessage());
       }
     } else {
-      log.info("spring cloud consul cluster: >>> agentHost: " + agentHost + "      agentPort: " + agentPort + " <<<");
       try {
         consulClient = new ConsulClient(agentHost, agentPort);
-        log.info("spring cloud consul cluster: >>> createConsulClient Success. agentHost: " + agentHost + "      agentPort: " + agentPort + " <<<");
+        log.debug("spring cloud consul cluster: >>> createConsulClient Success. agentHost: " + agentHost + "      agentPort: " + agentPort + " <<<");
       } catch (Exception e) {
-        log.info("spring cloud consul cluster: >>> createConsulClient Fail. agentHost: " + agentHost + "      agentPort: " + agentPort + "  {}  <<<", e.getMessage());
+        log.warn("spring cloud consul cluster: >>> createConsulClient Fail. agentHost: " + agentHost + "      agentPort: " + agentPort + "  {}  <<<", e.getMessage());
       }
     }
 
