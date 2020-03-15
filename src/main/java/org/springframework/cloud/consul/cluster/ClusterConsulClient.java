@@ -1937,7 +1937,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   protected void createAllConsulClients() {
     long currentHealthClientNum = this.consulClientHealthMap.values().stream().filter(isHealthy -> isHealthy).count();
     int clientNum = clientIdSet.size();
-    log.info("spring cloud consul cluster: >>> current health client num: {}           all client num: {}     Is Same? {} <<<",
+    log.info("spring cloud consul cluster: >>> current health client num: {}           all client num: {}     Is Same ? {} <<<",
         currentHealthClientNum, clientNum, clientNum == currentHealthClientNum);
     //所有consul节点都健康，无需重新建立client
     if (clientNum == currentHealthClientNum) {
@@ -1952,7 +1952,7 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
 
     boolean flag = ListUtil.isSame(this.consulClients, tmpConsulClients);
 
-    log.info("spring cloud consul cluster: >>> createAllConsulClients. {}           The Size: {}.     Is Same? {} <<<",
+    log.info("spring cloud consul cluster: >>> createAllConsulClients. {}           The Size: {}.     Is Same ? {} <<<",
         tmpConsulClients, tmpConsulClients.size(), flag);
 
     //consul节点有变化
