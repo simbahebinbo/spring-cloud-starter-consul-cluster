@@ -3,11 +3,13 @@ package org.springframework.cloud.consul.cluster;
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.SocketTimeoutException;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -65,6 +67,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.ObjectUtils;
+import org.apache.commons.lang3.concurrent.BasicThreadFactory;
 import org.springframework.cloud.consul.ConsulProperties;
 import org.springframework.retry.RetryCallback;
 import org.springframework.retry.RetryContext;
@@ -1452,11 +1455,13 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
    */
   @Override
   public Response<Void> agentServiceRegister(NewService newService) {
-    this.currentNewService = newService;
-
-    return this.retryTemplate.execute(context -> {
+    ScheduledThreadPoolExecutor scheduledThreadPoolExecutor = new ScheduledThreadPoolExecutor(
+        1, new BasicThreadFactory.Builder().namingPattern("schedule-pool-%d").daemon(false).build());
+    // 第一个参数是任务，第二个参数为首次执行的延时时间，第三个参数为定时执行的间隔时间,第四个参数是时间单位
+    scheduledThreadPoolExecutor.scheduleAtFixedRate(() -> {
+      log.debug("Local Time is " + new Date().toString());
       Response<Void> result = null;
-      for (ConsulClientHolder consulClient : this.consulClients) {
+      for (ConsulClientHolder consulClient : consulClients) {
         if (consulClient.isHealthy()) {
           result = consulClient.getClient().agentServiceRegister(newService);
         }
@@ -1464,9 +1469,24 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
       log.info(
           "lansheng228: >>> function agentServiceRegister => newService: {}  ===  result: {}  <<<",
           newService, result);
+    }, clusterConsulProperties.getHealthCheckInterval(),
+        clusterConsulProperties.getHealthCheckInterval(), TimeUnit.MILLISECONDS);
 
-      return result;
-    });
+//    this.currentNewService = newService;
+//
+//    return this.retryTemplate.execute(context -> {
+    Response<Void> result = null;
+//      for (ConsulClientHolder consulClient : this.consulClients) {
+//        if (consulClient.isHealthy()) {
+//          result = consulClient.getClient().agentServiceRegister(newService);
+//        }
+//      }
+//      log.info(
+//          "lansheng228: >>> function agentServiceRegister => newService: {}  ===  result: {}  <<<",
+//          newService, result);
+//
+    return result;
+//    });
   }
 
   //重新注册
@@ -1504,12 +1524,13 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
    */
   @Override
   public Response<Void> agentServiceRegister(NewService newService, String token) {
-    this.currentNewService = newService;
-    this.currentToken = token;
-
-    return this.retryTemplate.execute(context -> {
+    ScheduledThreadPoolExecutor scheduledThreadPoolExecutor = new ScheduledThreadPoolExecutor(
+        1, new BasicThreadFactory.Builder().namingPattern("schedule-pool-%d").daemon(false).build());
+    // 第一个参数是任务，第二个参数为首次执行的延时时间，第三个参数为定时执行的间隔时间,第四个参数是时间单位
+    scheduledThreadPoolExecutor.scheduleAtFixedRate(() -> {
+      log.debug("Local Time is " + new Date().toString());
       Response<Void> result = null;
-      for (ConsulClientHolder consulClient : this.consulClients) {
+      for (ConsulClientHolder consulClient : consulClients) {
         if (consulClient.isHealthy()) {
           result = consulClient.getClient().agentServiceRegister(newService, token);
         }
@@ -1517,9 +1538,25 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
       log.info(
           "lansheng228: >>> function agentServiceRegister => newService: {}  ===  token: {} ===  response: {} <<<",
           newService, token, result);
+    }, clusterConsulProperties.getHealthCheckInterval(),
+        clusterConsulProperties.getHealthCheckInterval(), TimeUnit.MILLISECONDS);
 
-      return result;
-    });
+//    this.currentNewService = newService;
+//    this.currentToken = token;
+//
+//    return this.retryTemplate.execute(context -> {
+    Response<Void> result = null;
+//      for (ConsulClientHolder consulClient : this.consulClients) {
+//        if (consulClient.isHealthy()) {
+//          result = consulClient.getClient().agentServiceRegister(newService, token);
+//        }
+//      }
+//      log.info(
+//          "lansheng228: >>> function agentServiceRegister => newService: {}  ===  token: {} ===  response: {} <<<",
+//          newService, token, result);
+//
+    return result;
+//    });
   }
 
   /**
@@ -1933,11 +1970,6 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     //consul节点有变化
     if (!flag) {
       this.consulClients = tmpConsulClients;
-      try {
-        throw new BadConsulAgentException("lansheng228: >>> consul client has change");
-      } catch (Exception ignored) {
-
-      }
       //重新注册
 //      agentServiceReregister();
     }
