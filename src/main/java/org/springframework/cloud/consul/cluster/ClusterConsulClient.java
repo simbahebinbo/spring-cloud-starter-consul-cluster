@@ -1732,6 +1732,8 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
       properties.setPort(Integer.parseInt(connects[1]));
 
       ConsulClientHolder consulClientHolder = new ConsulClientHolder(properties);
+      consulClientHolder.setPrimary(consulClientHolder == this.primaryClient);
+
       clientIdSet.add(consulClientHolder.getClientId());
 
       return consulClientHolder;
@@ -1865,7 +1867,8 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
   protected ConsulClient getRetryConsulClient(RetryContext context) {
     context.setAttribute(CURRENT_CLIENT_KEY, this.currentClient);
     int retryCount = context.getRetryCount();
-    if (!this.currentClient.isHealthy()) {
+    if ((!this.currentClient.isHealthy())
+        && (this.consulClients.size() > 0)) {
       log.info("spring cloud consul cluster: >>> Current ConsulClient[{}] Is Unhealthy. Choose Again! <<<",
           this.currentClient);
       chooseConsulClient();
@@ -1942,6 +1945,8 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     if (clientNum == currentHealthClientNum) {
       return;
     }
+
+    log.warn("spring cloud consul cluster: >>> some consul clients are unhealthy. Please check!  <<<");
 
     //存在不健康的consul节点，重新建立client
     List<ConsulClientHolder> tmpConsulClients = createConsulClients();
