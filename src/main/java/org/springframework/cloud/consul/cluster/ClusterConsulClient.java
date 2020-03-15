@@ -1732,6 +1732,9 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
       properties.setPort(Integer.parseInt(connects[1]));
 
       ConsulClientHolder consulClientHolder = new ConsulClientHolder(properties);
+      log.info("spring cloud consul cluster: >>> consulClientHolder: {}, primaryClient: {} <<<",
+          consulClientHolder, this.primaryClient);
+
       clientIdSet.add(consulClientHolder.getClientId());
 
       return consulClientHolder;
@@ -1948,7 +1951,11 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
 
     //存在不健康的consul节点，重新建立client
     List<ConsulClientHolder> tmpConsulClients = createConsulClients();
-    tmpConsulClients.forEach(consulClient -> consulClient.setPrimary(consulClient == this.primaryClient));
+    tmpConsulClients.forEach(tmpConsulClient -> {
+      tmpConsulClient.setPrimary(tmpConsulClient == this.primaryClient);
+      log.info("spring cloud consul cluster: >>> tmpConsulClient: {}, primaryClient: {} <<<",
+          tmpConsulClient, this.primaryClient);
+    });
 
     boolean flag = ListUtil.isSame(this.consulClients, tmpConsulClients);
 
@@ -1968,6 +1975,8 @@ public class ClusterConsulClient extends ConsulClient implements AclClient, Agen
     for (ConsulClientHolder consulClient : this.consulClients) {
       consulClient.checkHealth();
       tmpConsulClientHealthMap.put(consulClient.getClientId(), consulClient.isHealthy());
+      log.info("spring cloud consul cluster: >>> consulClient: {}, primaryClient: {} <<<",
+          consulClient, this.primaryClient);
       consulClient.setPrimary(consulClient == this.primaryClient);
     }
     log.info("spring cloud consul cluster: >>> check all consul clients healthy: {} <<<", tmpConsulClientHealthMap);
