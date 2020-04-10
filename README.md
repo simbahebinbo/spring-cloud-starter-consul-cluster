@@ -61,6 +61,8 @@ consul的使用守则是应用程序与consul client共生死(部署在一起,�
 还是把去重逻辑放到 ConsulDiscoveryClient.getInstances() 和 ConsulServerList.getXxxServers() 方法中呢？
 这个我选择了后者，因为前者的结果集是重点重复，而后者是完全重复，放在后者也是一个较为合理的方式。
 
+* 监控检查间隔 spring.cloud.consul.retry.initial-interval，默认为10秒。
+
 # 功能实现
 
 * 集群fallback策略：组成客户端集群的节点中会通过哈希一致性算法得出一个 ClusterConsulClient 作为当前正在使用的 ClusterConsulClient(currentClient)。
@@ -97,16 +99,30 @@ consul的使用守则是应用程序与consul client共生死(部署在一起,�
 
 # 使用方法
 
-1.项目中引入starter：[spring-cloud-starter-consul-cluster](https://github.com/lansheng228/spring-cloud-starter-consul-cluster)
+* 1.项目中引入starter：[spring-cloud-starter-consul-cluster](https://github.com/lansheng228/spring-cloud-starter-consul-cluster)
 
-2.在bootstrap.yml|properties中指定 spring.cloud.consul.cluster.nodes 为多节点，如下所示：
-	
-	spring.cloud.consul.cluster.nodes=192.168.1.101:8500,192.168.1.102:8500,192.168.1.103:8500
+* 2.在bootstrap.yml|properties中指定 spring.cloud.consul.cluster.nodes 为多节点，如下所示：
 
-3.开启相关日志的打印：
+```
+# consul agent
+spring.cloud.consul.cluster.nodes=192.168.1.101:8500,192.168.1.102:8500,192.168.1.103:8500
+```
+
+* 3. 在bootstrap.yml|properties中指定监控检查间隔 spring.cloud.consul.retry.initial-interval ，如下所示：
+
+```
+# 服务监测时间间隔
+spring.cloud.consul.retry.initial-interval: 10000
+```
+
+如不配置，默认为10秒。
+
+* 4.开启相关日志的打印：
 
 ````xml
 	
 	<logger name="org.springframework.cloud.consul" level="DEBUG"/>
 	
 ````
+
+
